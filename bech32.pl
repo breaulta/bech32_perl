@@ -42,23 +42,15 @@ sub hrpExpand {
 
 sub verifyChecksum {
   my $hrp_str = $_[0];
-  my $data_str = $_[1];
-  my @hrp = split(//, $hrp_str, length($hrp_str));
-  my @data = split(//, $data_str, length($data_str));
-  #return polymod(hrpExpand(@hrp).concat(@data)) === 1;
-  #my @returned_hrp = hrpExpand(@hrp);
-    print "data after entering verifychksum: data:~$data_str~ hrp:~$hrp_str~\n";
+  my $data_ref = $_[1];
+  my @data = @{$data_ref};
+  my $return;
+  my $exp_ref = hrpExpand($hrp_str);
+  my @hrp_exp = @{$exp_ref};
+  push @hrp_exp, @data;
+  my $poly = polymod(\@hrp_exp);
 
-    my $return;
-    my $hrp_returned = hrpExpand($hrp_str);
-    my @hrpExpanded = split(//, $hrp_returned, length($hrp_returned));
-    push (@hrpExpanded, @data);
-my $comb = $hrp_returned + $data_str;
-print "\n TEST VERIFYCHECKSUM: ~$comb~\n";
-    my $hrpE = join('', @hrpExpanded);
-    print "my polystr inside verifyChecksum: ~$hrpE~";
-
-    if ( polymod($hrpE) == 1){
+    if ( $poly  == 1){
 	$return = 1;
     }else{
 	$return = 0;
@@ -98,26 +90,19 @@ sub encode {
   #convert input string into byte array
   my @hex_data = $hex_data_input_str =~ /../g;
   #convert to lower case to satisfy perl's disdain for uppercase
-#foreach 
-#my $chksum_str = createChecksum($hrp_input_str, $hex_data_input_str);
 my $chksum_ref = createChecksum($hrp_input_str, \@hex_data);
-#my @chksum = split(//, $chksum_str, length($chksum_str));  #Must be hex array, because it is appended to the main data array
 my @chksum = @{$chksum_ref};
-foreach (@chksum) {print "\nchksum: ~$_~";}
-  #$_ = hex($_) for @chksum;
-#my $chksum_str = join('', @chksum);
-#print "\nReturn from create checksum within encode: ~$chksum_str~\n";
-  #my $combined = @data.concat(createChecksum(@hrp, @data));
+my @print_chksum = @{$chksum_ref};
+print "\nComputed Checksum: ";
+foreach (@print_chksum){ 
+  $_ = hex($_);
+  print "$_ ";
+}
   $_ = hex($_) for @hex_data;
   push @hex_data, @chksum;
- # $_ = hex($_) for @hex_data;
   push @hrp, 1; #should be bc1 (or tc1 for the testnet) now, and we're going to append the dereferenced char array
   for (my $p = 0; $p < scalar @hex_data; ++$p) {
-    #@ret += $CHARSET.charAt($data[$p]);  push onto ret the char in CHARSET that matches 
-    #push @ret, substr($CHARSET, $p-1, 1);
 #looks like we're decoding indexes of CHARSET from @data into their respective chars for an encode
-#print "\nhex_data: ~$hex_data[$p]~";
-#print "\nreturned: ~$CHARSET[$hex_data[$p]]~";
     push @hrp, $CHARSET[$hex_data[$p]];
   }
 my $ret_str = join('', @hrp);
@@ -130,38 +115,37 @@ sub decode {
   my @bechArr = split (//, $bechString, length($bechString));
   my $p;
   my $d;
-  my $has_lower = 0;   #set to false
-  my $has_upper = 0;   #set to false
+  my $has_lowercase = 0;   #set to false
+  my $has_uppercase = 0;   #set to false
   for ($p = 0; $p < scalar @bechArr; ++$p) {
-    #if (@bechArr.charCodeAt($p) < 33 || @bechArr.charCodeAt($p) > 126) {
+    #Check if the chars are 'normal' punctuation, numbers, letters
     if (ord($bechArr[$p]) < 33 || ord($bechArr[$p]) > 126) {
       return undef;
     }
-    #if (@bechArr.charCodeAt($p) >= 97 && @bechArr.charCodeAt($p) <= 122) {
     if (ord($bechArr[$p]) >= 97 && ord($bechArr[$p]) <= 122) {
-        $has_lower = 1;
+        $has_lowercase = 1;
     }
     if (ord($bechArr[$p]) >= 65 && ord($bechArr[$p]) <= 90) {
-        $has_upper = 1;
+        $has_uppercase = 1;
     }
   }
-  if ($has_lower && $has_upper) {
+  if ($has_lowercase && $has_uppercase) {
     return undef;
   }
-  #@bechArr = @bechArr.toLowerCase();
+  #Convert @bechArr to lowercase
   $_ = lc for @bechArr;
   #my $pos = @bechArr.lastIndexOf('1');
   my $pos;
   for ($pos = 0; $pos < scalar @bechArr; $pos++){
     if ( $bechArr[$pos] eq  '1' ) { last; }
   }
-  #if ($pos < 1 || $pos + 7 > @bechArr.length || @bechArr.length > 90) {
   #my $var = $pos + 7;
+  #check if the human readable part and full string aren't too long
   if ($pos < 1 || $pos + 7 > scalar @bechArr || scalar @bechArr > 90) {
     return undef;
   }
-
   #my @hrp = @bechArr.substring(0, $pos);
+  #Copy the human readable part to @hrp
   my @hrp;
   for($p = 0; $p < $pos; $p++ ){
     $hrp[$p] = $bechArr[$p];
@@ -171,16 +155,8 @@ sub decode {
   my $chset;
   my $bca;
   for ($p = $pos + 1; $p < scalar @bechArr; ++$p) {
-    #my $d = $CHARSET.indexOf(@bechArr.charAt($p));
-    #my $d = $CHARSET.indexOf($bechArr[$p]);
     $d = -1;
     for ($i = 0; $i < scalar @CHARSET; $i++) {
-	#$chset = substr($CHARSET, $i-1, 1);
-	#$chset = substr($CHARSET, $i-1, 1);
-	#$bca = $bechArr[$p];
-#print "Char from the CHARSET: $chset\n";
-#print "Value from the becharray: $bca\n";
-      #if (substr($CHARSET, $i-1, 1) eq $bechArr[$p]){
       if ($CHARSET[$i] eq $bechArr[$p]){
 	#$d = $bechArr[$p];
 	#d is the index of the char in CHARSET
@@ -195,56 +171,39 @@ sub decode {
     push @data, $d;
   }
 
-my $hrp_str = join('', @hrp);
-my $da = join('', @data);
-print "data before verifychecksum: hrp:~$hrp_str~ data:~$da~\n";
-
-my $vfyChk = verifyChecksum($hrp_str, $da);
-print "verifyChecksum: $vfyChk\n";
-
-  #if (!verifyChecksum(@hrp, @data)) {
+  my $hrp_str = join('', @hrp);
+  my $vfyChk = verifyChecksum($hrp_str, \@data);
   if (!$vfyChk) {
-print "checksum bad\n";
     return undef;
   }
   my @data_ret;
   for ($p = 0; $p < scalar @data - 6; $p++){
     $data_ret[$p] = $data[$p];
   }
-my $data_str = join('', @data_ret);
-print "data: $data_str\n";
-
-  #return {hrp: @hrp, data: @data.slice(0, @data.length - 6)};
-  return ($hrp_str, $data_str);
+  foreach (@data_ret){ $_ = sprintf("%.2x", $_); }
+  return ($hrp_str, \@data_ret);
 }
 
-
-#decode test
-#print "\nStarting test for Decode...\n";
-#my $test_decode_input = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
-#my $expected_decode_output_data = "";
-#my ($hrp_string, $data_string) = decode($test_decode_input);
-#@out_data = @$data_ref;
-#my $hrp_string = join('', @out_hrp);
-#my $out_string = join('', @out_data);
-#print "The input is: ~$test_decode_input~\n";
-#print "The output is: hrp:~$hrp_string~ data:~$data_string~\n";
-
-#encode test
-print "\nStarting test for Encode...\n";
-#print "Input: hrp:~$hrp_string~ data:~$out_string~\n";
-my $expected_encoded_address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
-my $encode_hrp_input = "bc";
-#Values used for this test are from: https://bitcointalk.org/index.php?topic=4992632.0
-#The expected bech32 address: 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'
-#This data_to_encode is the witness version byte '0x00' + result of the ripemd-160 hash.  It needs a checksum to be complete
-my $data_to_encode = "000e140f070d1a001912060b0d081504140311021d030c1d03040f1814060e1e16";
-my $enc_out_str = encode($encode_hrp_input, $data_to_encode);
-print "\n\nInput: hrp:~$encode_hrp_input~ data:~$data_to_encode~\n";
-print "Output:           ~$enc_out_str~\n";
-print "Output expected:  ~$expected_encoded_address~\n";
-
-
 ##the nonchar data array needs to keep the index integrity because there are more than 10 indexes (should be 32 right?)
+
+#my $bech32_encoded_address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+#my $bech32_encoded_address = "A12UEL5L";
+#my $bech32_encoded_address = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
+my $bech32_encoded_address = "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw";
+#my $bech32_encoded_address = "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j";
+#my $bech32_encoded_address = "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w";
+#my $bech32_encoded_address = "?1ezyfcl";
+print "\nRunning tests for bech32 address $bech32_encoded_address\n";
+my ($hrp_string, $data_ref) = decode($bech32_encoded_address);
+my @out_data = @{$data_ref};
+print "\nThe bech32 decode output:\nhuman readable part(hrp): $hrp_string\nData in base 32 hex: ";
+foreach (@out_data){ 
+  print "$_"; 
+}
+my $data_to_encode = join('', @out_data);
+my $reencoded_bech32 = encode($hrp_string, $data_to_encode);
+print "\nRe-encoded back to bech32 is: $reencoded_bech32";
+print "\nOriginal bech32 address     : $bech32_encoded_address\n\n";
+
 
 
