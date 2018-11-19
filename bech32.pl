@@ -180,8 +180,68 @@ sub decode {
   for ($p = 0; $p < scalar @data - 6; $p++){
     $data_ret[$p] = $data[$p];
   }
+  #Convert the return array to a 2 digit hex number.
   foreach (@data_ret){ $_ = sprintf("%.2x", $_); }
   return ($hrp_str, \@data_ret);
+}
+#data is an array with the preceeding char (witness version) removed
+#frombits and tobits are ints
+#pad is a boolean
+#function convertbits (data, frombits, tobits, pad) {
+sub convertbits {
+  my $data_ref = $_[0];
+  my $frombits = $_[1];
+  my $tobits = $_[2];
+  my $pad_bool = $_[3];
+
+  my @data = @{$data_ref};
+  my $acc = 0;
+  my $bits = 0;
+  my @ret;
+  my $maxv = (1 << $tobits) - 1;
+  for (my $p = 0; $p < @data.length; ++$p) {
+    var value = @data[p];
+    if (value < 0 || (value >> frombits) !== 0) {
+      return null;
+    }
+    $acc = ($acc << frombits) | value;
+    $bits += frombits;
+    while ($bits >= $tobits) {
+      $bits -= $tobits;
+      ret.push(($acc >> $bits) & maxv);
+    }
+  }
+  if (pad) {
+    if ($bits > 0) {
+      ret.push(($acc << ($tobits - $bits)) & maxv);
+    }
+  } else if ($bits >= frombits || (($acc << ($tobits - $bits)) & maxv)) {
+    return null;
+  }
+  return ret;
+}
+
+function decode (hrp, addr) {
+  var dec = bech32.decode(addr);
+  if (dec === null || dec.hrp !== hrp || dec.@data.length < 1 || dec.@data[0] > 16) {
+    return null;
+  }
+  var res = convertbits(dec.@data.slice(1), 5, 8, false);
+  if (res === null || res.length < 2 || res.length > 40) {
+    return null;
+  }
+  if (dec.@data[0] === 0 && res.length !== 20 && res.length !== 32) {
+    return null;
+  }
+  return {version: dec.@data[0], program: res};
+}
+
+function encode (hrp, version, program) {
+  var ret = bech32.encode(hrp, [version].concat(convertbits(program, 8, 5, true)));
+  if (decode(hrp, ret) === null) {
+    return null;
+  }
+  return ret;
 }
 
 ##the nonchar data array needs to keep the index integrity because there are more than 10 indexes (should be 32 right?)
@@ -197,9 +257,7 @@ print "\nRunning tests for bech32 address $bech32_encoded_address\n";
 my ($hrp_string, $data_ref) = decode($bech32_encoded_address);
 my @out_data = @{$data_ref};
 print "\nThe bech32 decode output:\nhuman readable part(hrp): $hrp_string\nData in base 32 hex: ";
-foreach (@out_data){ 
-  print "$_"; 
-}
+foreach (@out_data){ print "$_"; }
 my $data_to_encode = join('', @out_data);
 my $reencoded_bech32 = encode($hrp_string, $data_to_encode);
 print "\nRe-encoded back to bech32 is: $reencoded_bech32";
