@@ -79,7 +79,7 @@ $_ = hex($_) for @data;
   return \@ret;
 }
 
-sub encode {
+sub encode_bech32 {
   my $hrp_input_str = $_[0];
   my $hex_data_input_str = $_[1];  #the data here corresponds to numbers that reference the indexes of the CHARSET
   my @hrp = split(//, $hrp_input_str, length($hrp_input_str));
@@ -109,7 +109,7 @@ my $ret_str = join('', @hrp);
   return $ret_str;
 }
 
-sub decode {
+sub decode_bech32 {
   my $bechString = $_[0];
   #convert string to array
   my @bechArr = split (//, $bechString, length($bechString));
@@ -120,7 +120,7 @@ sub decode {
   for ($p = 0; $p < scalar @bechArr; ++$p) {
     #Check if the chars are 'normal' punctuation, numbers, letters
     if (ord($bechArr[$p]) < 33 || ord($bechArr[$p]) > 126) {
-      return undef;
+      return;
     }
     if (ord($bechArr[$p]) >= 97 && ord($bechArr[$p]) <= 122) {
         $has_lowercase = 1;
@@ -130,7 +130,7 @@ sub decode {
     }
   }
   if ($has_lowercase && $has_uppercase) {
-    return undef;
+    return;
   }
   #Convert @bechArr to lowercase
   $_ = lc for @bechArr;
@@ -142,7 +142,7 @@ sub decode {
   #my $var = $pos + 7;
   #check if the human readable part and full string aren't too long
   if ($pos < 1 || $pos + 7 > scalar @bechArr || scalar @bechArr > 90) {
-    return undef;
+    return;
   }
   #my @hrp = @bechArr.substring(0, $pos);
   #Copy the human readable part to @hrp
@@ -166,7 +166,7 @@ sub decode {
     }
     if ($d eq '-1') {
 #print "d is -1\n";
-      return undef;
+      return;
     }
     push @data, $d;
   }
@@ -174,13 +174,13 @@ sub decode {
   my $hrp_str = join('', @hrp);
   my $vfyChk = verifyChecksum($hrp_str, \@data);
   if (!$vfyChk) {
-    return undef;
+    return;
   }
   my @data_ret;
   for ($p = 0; $p < scalar @data - 6; $p++){
     $data_ret[$p] = $data[$p];
   }
-  #Convert the return array to a 2 digit hex number.
+  #Convert the values in the return array to 2 digit hex values.
   foreach (@data_ret){ $_ = sprintf("%.2x", $_); }
   return ($hrp_str, \@data_ret);
 }
@@ -199,49 +199,74 @@ sub convertbits {
   my $bits = 0;
   my @ret;
   my $maxv = (1 << $tobits) - 1;
-  for (my $p = 0; $p < @data.length; ++$p) {
-    var value = @data[p];
-    if (value < 0 || (value >> frombits) !== 0) {
-      return null;
+  for (my $p = 0; $p < scalar @data; ++$p) {
+    my $value = @data[$p];
+    if ($value < 0 || ($value >> $frombits) !== 0) {
+      return; #Fail condition.
     }
-    $acc = ($acc << frombits) | value;
-    $bits += frombits;
+    $acc = ($acc << $frombits) | $value;
+    $bits += $frombits;
     while ($bits >= $tobits) {
       $bits -= $tobits;
-      ret.push(($acc >> $bits) & maxv);
+      push @ret, (($acc >> $bits) & $maxv);
     }
   }
-  if (pad) {
+  if ($pad_bool) {
     if ($bits > 0) {
-      ret.push(($acc << ($tobits - $bits)) & maxv);
+      push @ret, (($acc << ($tobits - $bits)) & $maxv);
     }
-  } else if ($bits >= frombits || (($acc << ($tobits - $bits)) & maxv)) {
-    return null;
+  } elsif ($bits >= $frombits || (($acc << ($tobits - $bits)) & $maxv)) {
+    return;  #Fail condition. 
   }
-  return ret;
+  return \@ret;
 }
 
-function decode (hrp, addr) {
-  var dec = bech32.decode(addr);
-  if (dec === null || dec.hrp !== hrp || dec.@data.length < 1 || dec.@data[0] > 16) {
-    return null;
+sub decode {
+  my $hrp = $_[0];
+  my $addr = $_[1];
+
+#  my dec = bech32.decode(addr);
+  my ($hrp_string, $data_ref) = decode_bech32($addr);
+  my @data = @{$data_ref};
+#  if (dec === null || dec.hrp !== hrp || dec.@data.length < 1 || dec.@data[0] > 16) {
+  if (scalar @data == 0 || $hrp_string ne $hrp || scalar @data < 1 || @data[0] > 16) {
+    return;
   }
-  var res = convertbits(dec.@data.slice(1), 5, 8, false);
-  if (res === null || res.length < 2 || res.length > 40) {
-    return null;
+  #removes the first element of array.  In this case, the witness version, which isn't part of the program.
+  my $witness_version = shift @data; 
+  #Convert from 5 sig bits to 8 sig bits.
+  my $program_ref = convertbits(\@data, 5, 8, 0);
+  my @program = @{$program_ref};
+  if (scalar @program == 0 || scalar @program < 2 || scalar @program > 40) {
+    return;
   }
-  if (dec.@data[0] === 0 && res.length !== 20 && res.length !== 32) {
-    return null;
+  if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32) {
+    return;
   }
-  return {version: dec.@data[0], program: res};
+#  return {version: $witness_version, program: res};
+  return ($witness_version, \@program);
 }
 
-function encode (hrp, version, program) {
-  var ret = bech32.encode(hrp, [version].concat(convertbits(program, 8, 5, true)));
-  if (decode(hrp, ret) === null) {
-    return null;
+#function encode (hrp, version, program) {
+sub encode {
+  my $hrp = $_[0];
+  my $version = $_[1];
+  my $program_str = $_[2];  #presumably a hex string
+  #convert input string into byte array 
+  my @program = $program_str=~ /../g;
+
+  #var ret = encode_bech32(hrp, [version].concat(convertbits(program, 8, 5, true)));
+  my $converted_program_ref = convertbits(\@program, 8, 5, 1);
+  my @conv_prog = @{$converted_program_ref};
+  my $converted = join('', @conv_prog);
+  my $ver_and_prog = $version . $converted;
+  my $encoded = encode_bech32($hrp, $ver_and_prog);
+
+  my ($test_hrp, $test_prog_ref) = decode($hrp, $encoded);
+  if ($test_hrp == 0) {
+    return;
   }
-  return ret;
+  return $encoded;
 }
 
 ##the nonchar data array needs to keep the index integrity because there are more than 10 indexes (should be 32 right?)
@@ -254,12 +279,12 @@ my $bech32_encoded_address = "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw";
 #my $bech32_encoded_address = "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w";
 #my $bech32_encoded_address = "?1ezyfcl";
 print "\nRunning tests for bech32 address $bech32_encoded_address\n";
-my ($hrp_string, $data_ref) = decode($bech32_encoded_address);
+my ($hrp_string, $data_ref) = decode_bech32($bech32_encoded_address);
 my @out_data = @{$data_ref};
 print "\nThe bech32 decode output:\nhuman readable part(hrp): $hrp_string\nData in base 32 hex: ";
 foreach (@out_data){ print "$_"; }
 my $data_to_encode = join('', @out_data);
-my $reencoded_bech32 = encode($hrp_string, $data_to_encode);
+my $reencoded_bech32 = encode_bech32($hrp_string, $data_to_encode);
 print "\nRe-encoded back to bech32 is: $reencoded_bech32";
 print "\nOriginal bech32 address     : $bech32_encoded_address\n\n";
 
