@@ -200,8 +200,8 @@ sub convertbits {
   my @ret;
   my $maxv = (1 << $tobits) - 1;
   for (my $p = 0; $p < scalar @data; ++$p) {
-    my $value = @data[$p];
-    if ($value < 0 || ($value >> $frombits) !== 0) {
+    my $value = $data[$p];
+    if ($value < 0 || ($value >> $frombits) != 0) {
       return; #Fail condition.
     }
     $acc = ($acc << $frombits) | $value;
@@ -229,7 +229,7 @@ sub decode {
   my ($hrp_string, $data_ref) = decode_bech32($addr);
   my @data = @{$data_ref};
 #  if (dec === null || dec.hrp !== hrp || dec.@data.length < 1 || dec.@data[0] > 16) {
-  if (scalar @data == 0 || $hrp_string ne $hrp || scalar @data < 1 || @data[0] > 16) {
+  if (scalar @data == 0 || $hrp_string ne $hrp || scalar @data < 1 || $data[0] > 16) {
     return;
   }
   #removes the first element of array.  In this case, the witness version, which isn't part of the program.
