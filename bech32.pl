@@ -194,14 +194,20 @@ sub convertbits {
   my $tobits = $_[2];
   my $pad_bool = $_[3];
 
+my $test;
+
   my @data = @{$data_ref};
+print "\nEntering convertbits.\nData in the data array:";
+foreach (@data) { print "$_ ";}
   my $acc = 0;
   my $bits = 0;
   my @ret;
   my $maxv = (1 << $tobits) - 1;
   for (my $p = 0; $p < scalar @data; ++$p) {
-    my $value = $data[$p];
+    my $value = hex($data[$p]);
+    #print "\nvalue:$value";
     if ($value < 0 || ($value >> $frombits) != 0) {
+      print "\nFail1\n";
       return; #Fail condition.
     }
     $acc = ($acc << $frombits) | $value;
@@ -216,11 +222,17 @@ sub convertbits {
       push @ret, (($acc << ($tobits - $bits)) & $maxv);
     }
   } elsif ($bits >= $frombits || (($acc << ($tobits - $bits)) & $maxv)) {
+      $test = (($acc << ($tobits - $bits)) & $maxv);
+      print "\ntest:$test";
+      print "\nbits:$bits frombits:$frombits acc:$acc tobits:$tobits maxv:$maxv\n";
     return;  #Fail condition. 
   }
+  # Convert back to hex.
+  foreach (@ret){ $_ = sprintf("%.2x", $_); }
   return \@ret;
 }
 
+# Segwit address decode.
 sub decode {
   my $hrp = $_[0];
   my $addr = $_[1];
@@ -230,6 +242,7 @@ sub decode {
   my @data = @{$data_ref};
 #  if (dec === null || dec.hrp !== hrp || dec.@data.length < 1 || dec.@data[0] > 16) {
   if (scalar @data == 0 || $hrp_string ne $hrp || scalar @data < 1 || $data[0] > 16) {
+    print "\nFail decode 1\n";
     return;
   }
   #removes the first element of array.  In this case, the witness version, which isn't part of the program.
@@ -238,16 +251,20 @@ sub decode {
   my $program_ref = convertbits(\@data, 5, 8, 0);
   my @program = @{$program_ref};
   if (scalar @program == 0 || scalar @program < 2 || scalar @program > 40) {
+    print "\nFail decode 2\n";
     return;
   }
   if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32) {
+    print "\nFail decode 3\n";
     return;
   }
 #  return {version: $witness_version, program: res};
   return ($witness_version, \@program);
 }
 
-#function encode (hrp, version, program) {
+# I believe this is a segwit address encode. Version is the witness version,
+# and program is the data. The witver does live inside the data!
+# function encode (hrp, version, program) {
 sub encode {
   my $hrp = $_[0];
   my $version = $_[1];
@@ -262,19 +279,25 @@ sub encode {
   my $ver_and_prog = $version . $converted;
   my $encoded = encode_bech32($hrp, $ver_and_prog);
 
-  my ($test_hrp, $test_prog_ref) = decode($hrp, $encoded);
-  if ($test_hrp == 0) {
+  my ($test_witver, $test_prog_ref) = decode($hrp, $encoded);
+  if (not defined $test_witver) {
+    print "\nFail encode 1\n";
     return;
   }
   return $encoded;
 }
 
+# Sub to write when everything is working and it's time to integrate into the schulwitz base58 site.
+#sub handle_input_from_website {
+#}
+
 ##the nonchar data array needs to keep the index integrity because there are more than 10 indexes (should be 32 right?)
 
+my $bech32_encoded_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
 #my $bech32_encoded_address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
 #my $bech32_encoded_address = "A12UEL5L";
 #my $bech32_encoded_address = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
-my $bech32_encoded_address = "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw";
+#my $bech32_encoded_address = "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw";
 #my $bech32_encoded_address = "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j";
 #my $bech32_encoded_address = "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w";
 #my $bech32_encoded_address = "?1ezyfcl";
@@ -287,6 +310,26 @@ my $data_to_encode = join('', @out_data);
 my $reencoded_bech32 = encode_bech32($hrp_string, $data_to_encode);
 print "\nRe-encoded back to bech32 is: $reencoded_bech32";
 print "\nOriginal bech32 address     : $bech32_encoded_address\n\n";
+
+# SegWit tests
+# Decoder test
+my $test_hrp = "bc";
+print "\nRunning test for bitconverter using $bech32_encoded_address\n";
+my ($wit_ver, $program_ref) = decode($test_hrp, $bech32_encoded_address);
+my @program_ = @{$program_ref};
+print "\nWitness version: ~$wit_ver~\nProgram: ";
+foreach (@program_) { print "$_"; }
+print "\n";
+
+# Encoder test
+my $program_test_str = join('', @program_);
+print "\nRunning Segmented Witness test for encode.";
+print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
+my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
+print "\nEncoded test result should match decode input:$encoded_test\n";
+
+
+
 
 
 
