@@ -291,8 +291,10 @@ sub encode {
 #sub handle_input_from_website {
 #}
 
-##the nonchar data array needs to keep the index integrity because there are more than 10 indexes (should be 32 right?)
+# Test cases from https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/tests.cpp
+my @testcases = ('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4', 'bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx', 'BC1SW50QA3JX3S', 'bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj');
 
+# Other testcases
 my $bech32_encoded_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
 #my $bech32_encoded_address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
 #my $bech32_encoded_address = "A12UEL5L";
@@ -311,11 +313,14 @@ my $reencoded_bech32 = encode_bech32($hrp_string, $data_to_encode);
 print "\nRe-encoded back to bech32 is: $reencoded_bech32";
 print "\nOriginal bech32 address     : $bech32_encoded_address\n\n";
 
+
 # SegWit tests
+foreach (@testcases) {
+print "\n*****************************************************************************************************";
 # Decoder test
 my $test_hrp = "bc";
-print "\nRunning test for bitconverter using $bech32_encoded_address\n";
-my ($wit_ver, $program_ref) = decode($test_hrp, $bech32_encoded_address);
+print "\nRunning test for bitconverter using $_\n";
+my ($wit_ver, $program_ref) = decode($test_hrp, $_);
 my @program_ = @{$program_ref};
 print "\nWitness version: ~$wit_ver~\nProgram: ";
 foreach (@program_) { print "$_"; }
@@ -328,7 +333,7 @@ print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
 my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
 print "\nEncoded test result should match decode input:$encoded_test\n";
 
-
+}
 
 
 
