@@ -316,22 +316,22 @@ print "\nOriginal bech32 address     : $bech32_encoded_address\n\n";
 
 # SegWit tests
 foreach (@testcases) {
-print "\n*****************************************************************************************************";
-# Decoder test
-my $test_hrp = "bc";
-print "\nRunning test for bitconverter using $_\n";
-my ($wit_ver, $program_ref) = decode($test_hrp, $_);
-my @program_ = @{$program_ref};
-print "\nWitness version: ~$wit_ver~\nProgram: ";
-foreach (@program_) { print "$_"; }
-print "\n";
+    print "\n*****************************************************************************************************";
+    # Decoder test
+    my $test_hrp = "bc";
+    print "\nRunning test for bitconverter using $_\n";
+    my ($wit_ver, $program_ref) = decode($test_hrp, $_);
+    my @program_ = @{$program_ref};
+    print "\nWitness version: ~$wit_ver~\nProgram: ";
+    foreach (@program_) { print "$_"; }
+    print "\n";
 
-# Encoder test
-my $program_test_str = join('', @program_);
-print "\nRunning Segmented Witness test for encode.";
-print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
-my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
-print "\nEncoded test result should match decode input:$encoded_test\n";
+    # Encoder test
+    my $program_test_str = join('', @program_);
+    print "\nRunning Segmented Witness test for encode.";
+    print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
+    my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
+    print "\nEncoded test result should match decode input:$encoded_test\n";
 
 }
 
