@@ -2,79 +2,73 @@
 use warnings;
 use strict;
 
+# This is the set of characters used for encoding.
 my @CHARSET = ('q','p','z','r','y','9','x','8','g','f','2','t','v','d','w','0','s','3','j','n','5','4','k','h','c','e','6','m','u','a','7','l');
+# Consult https://github.com/bitcoin/bitcoin/blob/master/src/bech32.cpp for how the polymod function works.
 my @GENERATOR = (0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3);
-
 sub polymod {
   my $val_ref = $_[0];
   my @values = @{$val_ref};
-#foreach(@values){ print "vals in polymod: ~$_~\n"; }
   my $chk = 1;
   for (my $p = 0; $p < scalar @values; ++$p) {
     my $top = $chk >> 25;
     $chk = ($chk & 0x1ffffff) << 5 ^ $values[$p];
-#print "values of p:~$p~ vals:~$values[$p]~ chk:~$chk~ top:~$top~\n";
     for (my $i = 0; $i < 5; ++$i) {
       if (($top >> $i) & 1) {
         $chk ^= $GENERATOR[$i];
-#print "values of Generator: i:~$i~ Gen: ~$GENERATOR[$i]~ Chk:~$chk~\n";
       }
     }
   }
   return $chk;
 }
 
+# Expand a HRP for use in checksum computation.
 sub hrpExpand {
   my $hrp_str = $_[0];
+  # Convert the human readable part string into an array of chars.
   my @hrp = split(//, $hrp_str, length($hrp_str));
-  my @ret;
+  my @ret;  #Initialize the return array.
   my $p;
-  for ($p = 0; $p < scalar @hrp; ++$p) {
-    push @ret, ord($hrp[$p]) >> 5;
+  for ($p = 0; $p < scalar @hrp; ++$p) { # scalar here returns the number of values in the @hrp array.
+    push @ret, ord($hrp[$p]) >> 5;  # Start with the high bits. ord() returns the unicode of a char.
   }
   push @ret, 0;
   for ($p = 0; $p < scalar @hrp; ++$p) {
-    push @ret, ord($hrp[$p]) & 31;
+    push @ret, ord($hrp[$p]) & 31;  # And now the low bits.
   }
-#foreach(@ret) { print "\nhrpExpand: ~$_~";}
-  return \@ret;
+  return \@ret;  # The backslash means to return a reference to the @ret array.
 }
 
 sub verifyChecksum {
   my $hrp_str = $_[0];
-  my $data_ref = $_[1];
-  my @data = @{$data_ref};
+  my $data_ref = $_[1];  # Pass in the reference to the data array.
+  my @data = @{$data_ref};  # Copy the values referenced in the data array to the @data array.
   my $return;
   my $exp_ref = hrpExpand($hrp_str);
   my @hrp_exp = @{$exp_ref};
-  push @hrp_exp, @data;
-  my $poly = polymod(\@hrp_exp);
-
-    if ( $poly  == 1){
-	$return = 1;
-    }else{
-	$return = 0;
-    }
+  push @hrp_exp, @data;  # [ hrp_exp values, data values ]
+  my $poly = polymod(\@hrp_exp); # I need a better variable name here.
+  if ( $poly  == 1 ){
+    $return = 1;
+  }else{
+    $return = 0;
+  }
   return $return;
 }
 
-sub createChecksum {   #Returns Array of ?
+sub createChecksum {   #Returns decimal Array of 6 values.
   my $hrp_str = $_[0];
   my $data_ref = $_[1];
   my @data = @{$data_ref};
-#foreach (@data) { print "Data passed to createChecksum: ~$_~\n";}
-my $exp_ref = hrpExpand($hrp_str);  #Returns Array of hex decimals from the hrp
-my @hrp_exp = @{$exp_ref};
-#foreach (@hrp_exp) { print "hrp_exp: ~$_~\n";}
-  #push @hrp_exp, (push @data, (0, 0, 0, 0, 0, 0));
-$_ = hex($_) for @data;
-  push @data, (0, 0, 0, 0, 0, 0);
-  push @hrp_exp, @data;
-  my $mod = polymod(\@hrp_exp) ^ 1;
+  my $exp_ref = hrpExpand($hrp_str);  #Returns Array of hex decimals from the hrp
+  my @hrp_exp = @{$exp_ref};
+  $_ = hex($_) for @data; # Convert each hex value in the @data array to decimal.
+  push @data, (0, 0, 0, 0, 0, 0); 
+  push @hrp_exp, @data; # Combine the two arrays into @hrp_exp.
+  my $mod = polymod(\@hrp_exp) ^ 1; # xor with 1.
   my @ret;
   for (my $p = 0; $p < 6; ++$p) {
-    
-    push @ret, (($mod >> 5 * (5 - $p)) & 31);
+    push @ret, (($mod >> 5 * (5 - $p)) & 31); # bitmagic
   }
   return \@ret;
 }
@@ -83,8 +77,6 @@ sub encode_bech32 {
   my $hrp_input_str = $_[0];
   my $hex_data_input_str = $_[1];  #the data here corresponds to numbers that reference the indexes of the CHARSET
   my @hrp = split(//, $hrp_input_str, length($hrp_input_str));
-  #my @hex_data = split(//, $hex_data_input_str, length($hex_data_input_str));
-
   die "Cannot Encode! There Must Be an Even Number of Hex Data Input Chars!" unless length($hex_data_input_str) % 2 == 0;
   die "Cannot Encode! Invalid Hexadecimal Character(s)!\n" unless $hex_data_input_str =~ /^[a-f0-9]*$/i;
   #convert input string into byte array
