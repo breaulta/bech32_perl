@@ -77,7 +77,7 @@ sub encode_bech32 {
   my $hrp_input_str = $_[0];
   my $hex_data_input_str = $_[1];  #the data here corresponds to numbers that reference the indexes of the CHARSET
   my @hrp = split(//, $hrp_input_str, length($hrp_input_str));
-  die "Cannot Encode! There Must Be an Even Number of Hex Data Input Chars!" unless length($hex_data_input_str) % 2 == 0;
+  die "Cannot Encode! There must be an even number of hex data input chars!" unless length($hex_data_input_str) % 2 == 0;
   die "Cannot Encode! Invalid Hexadecimal Character(s)!\n" unless $hex_data_input_str =~ /^[a-f0-9]*$/i;
   #convert input string into byte array
   my @hex_data = $hex_data_input_str =~ /../g;
@@ -242,10 +242,12 @@ sub decode {
   #Convert from 5 sig bits to 8 sig bits.
   my $program_ref = convertbits(\@data, 5, 8, 0);
   my @program = @{$program_ref};
+  #Check if the program length is too short or too long.
   if (scalar @program == 0 || scalar @program < 2 || scalar @program > 40) {
     print "\nFail decode 2\n";
     return;
   }
+  #bech32 addresses with witness version '0' must be either 20 chars (P2WPKH) or 32 chars (P2WSH).
   if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32) {
     print "\nFail decode 3\n";
     return;
@@ -284,7 +286,7 @@ sub encode {
 #}
 
 # Test cases from https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/tests.cpp
-my @testcases = ('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4', 'bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx', 'BC1SW50QA3JX3S', 'bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj');
+my @testcases = ('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4', 'bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx', 'BC1SW50QA3JX3S', 'bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj', 'bc1qcpwqjl9yzw33puu4hnuhvj5kmv9t5evmkde2rf');
 
 # Other testcases
 my $bech32_encoded_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
@@ -307,25 +309,39 @@ print "\nOriginal bech32 address     : $bech32_encoded_address\n\n";
 
 
 # SegWit tests
-foreach (@testcases) {
-    print "\n*****************************************************************************************************";
-    # Decoder test
-    my $test_hrp = "bc";
-    print "\nRunning test for bitconverter using $_\n";
-    my ($wit_ver, $program_ref) = decode($test_hrp, $_);
-    my @program_ = @{$program_ref};
-    print "\nWitness version: ~$wit_ver~\nProgram: ";
-    foreach (@program_) { print "$_"; }
-    print "\n";
+#foreach (@testcases) {
+#    print "\n*****************************************************************************************************";
+#    # Decoder test
+#    my $test_hrp = "tyler";
+#    print "\nRunning test for bitconverter using $_\n";
+#    my ($wit_ver, $program_ref) = decode($test_hrp, $_);
+#    my @program_ = @{$program_ref};
+#    print "\nWitness version: ~$wit_ver~\nProgram: ";
+#    foreach (@program_) { print "$_"; }
+#    print "\n";
+#
+#    # Encoder test
+#    my $program_test_str = join('', @program_);
+#    print "\nRunning Segmented Witness test for encode.";
+#    print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
+#    my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
+#    print "\nEncoded test result should match decode input:$encoded_test\n";
+#
+#}
+my $test_hrp = "bc";
+my $wit_ver = '00';
+my $program_test_str = "751e76e8199196d454941c45d1b3a323f1433bd6";
+print "\n*****************************************************************************************************";
+print "\nRunning Segmented Witness test for encode.";
+print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
+my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
+print "\nEncoded test result:$encoded_test Running a decode test on the result...";
+my ($wit_ver, $program_ref) = decode($test_hrp, $encoded_test);
+my @prog = @{$program_ref};
+print "\nWitness version: ~$wit_ver~\nProgram: ";
+foreach (@prog) { print "$_"; }
+print "\n";
 
-    # Encoder test
-    my $program_test_str = join('', @program_);
-    print "\nRunning Segmented Witness test for encode.";
-    print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
-    my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
-    print "\nEncoded test result should match decode input:$encoded_test\n";
-
-}
 
 
 
