@@ -129,7 +129,8 @@ sub decode_bech32 {
   #my $pos = @bechArr.lastIndexOf('1');
   my $pos;
   for ($pos = 0; $pos < scalar @bechArr; $pos++){
-    if ( $bechArr[$pos] eq  '1' ) { last; }
+    #I think this is broken.  It should take everything before the last instance of '1', not the first.
+    if ( $bechArr[$pos] eq  '1' ) { last; }  
   }
   #my $var = $pos + 7;
   #check if the human readable part and full string aren't too long
@@ -157,7 +158,7 @@ sub decode_bech32 {
       }
     }
     if ($d eq '-1') {
-#print "d is -1\n";
+  #print "d is -1\n";
       return;
     }
     push @data, $d;
@@ -186,11 +187,11 @@ sub convertbits {
   my $tobits = $_[2];
   my $pad_bool = $_[3];
 
-my $test;
+  my $test;
 
   my @data = @{$data_ref};
-print "\nEntering convertbits.\nData in the data array:";
-foreach (@data) { print "$_ ";}
+  print "\nEntering convertbits.\nData in the data array:";
+  foreach (@data) { print "$_ ";}
   my $acc = 0;
   my $bits = 0;
   my @ret;
@@ -283,19 +284,35 @@ sub encode {
 #Dies if the address is bad, otherwise returns the type of bech32 address.
 sub check_bech32_address {
     my $bech32_address = shift;
-    #Decode bech32.
-    my ($human_readable_part, $decoded_hexdecimal_data_ref) = decode_bech32($bech32_address);
-    my @decoded_hexdecimal_data = @{$decoded_hexdecimal_data_ref};
-    #An empty hrp here could indicate a number of errors.
-    die "Invalid bech32 bitcoin address!\n" if (not defined $human_readable_part);
+    #Match all the characters before the last '1'.
+    $bech32_address =~ /^(.*)1/;
+    my $human_readable_part = $1;
+print "\n\n testing hrp:$human_readable_part";
+    my ($decoded_human_readable_part, $decoded_hex32_data_ref) = decode($human_readable_part, $bech32_address);
+    my @decoded_hex32_data = @{$decoded_hex32_data_ref};
+    #An empty hrp here could indicates an unspecified error.
+    die "Invalid bech32 bitcoin address!\n" if (not defined $decoded_human_readable_part);
     #Mainnet bech32 address.
     if ($bech32_address=~ /^bc1/){
-	if ( scalar @decoded_hexdecimal_data
-	return "Standard Public";
+	#Mainnet Pay to Witness Private Key Hash
+	if ( scalar @decoded_hex32_data == 20 ){
+	    return "Mainnet P2WPKH";
+	#Mainnet Pay to Witness Script Hash
+	}elsif( scalar @decoded_hex32_data == 32){
+	    return "Mainnet P2WSH";
+	#This line should be unreachable. Something went wrong.
+	}else{ return "Invalid address length! Something went wrong.";}
     }   
     #Testnet bech32 address.
     elsif ($bech32_address =~ /^tb1/){
-	return "Multi-Signature";
+	#Testnet Pay to Witness Private Key Hash
+        if ( scalar @decoded_hex32_data == 20 ){
+            return "Testnet P2WPKH";
+        #Testnet Pay to Witness Script Hash
+        }elsif( scalar @decoded_hex32_data == 32){
+            return "Testnet P2WSH";
+        #Something went wrong.
+        }else{ return "Invalid address length! Something went wrong.";}
     } 
     #This is valid bech32, but not yet a valid bitcoin address.  It's likely the human readable part is unrecognized. 
     else{
@@ -365,6 +382,14 @@ my @prog = @{$program_ref};
 print "\nWitness version: ~$wit_ver~\nProgram: ";
 foreach (@prog) { print "$_"; }
 print "\n";
+
+
+
+print "\n*****************************************************************************************************";
+print "\n*****************************************************************************************************";
+print "\nRunning bech32 address check.";
+my $test_bech32_address_check = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
+print "\nThe bech32 address decodes as:", check_bech32_address($test_bech32_address_check),"\n";
 
 
 
