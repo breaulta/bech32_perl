@@ -232,7 +232,6 @@ sub decode {
 #  my dec = bech32.decode(addr);
   my ($hrp_string, $data_ref) = decode_bech32($addr);
   my @data = @{$data_ref};
-#  if (dec === null || dec.hrp !== hrp || dec.@data.length < 1 || dec.@data[0] > 16) {
   if (scalar @data == 0 || $hrp_string ne $hrp || scalar @data < 1 || $data[0] > 16) {
     print "\nFail decode 1\n";
     return;
@@ -247,7 +246,7 @@ sub decode {
     print "\nFail decode 2\n";
     return;
   }
-  #bech32 addresses with witness version '0' must be either 20 chars (P2WPKH) or 32 chars (P2WSH).
+  #bech32 addresses with witness version '0' must be either 20 bytes (P2WPKH) or 32 bytes (P2WSH).
   if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32) {
     print "\nFail decode 3\n";
     return;
@@ -266,7 +265,7 @@ sub encode {
   #convert input string into byte array 
   my @program = $program_str=~ /../g;
 
-  #var ret = encode_bech32(hrp, [version].concat(convertbits(program, 8, 5, true)));
+  #Convert from 8 sig bits to 5 sig bits.
   my $converted_program_ref = convertbits(\@program, 8, 5, 1);
   my @conv_prog = @{$converted_program_ref};
   my $converted = join('', @conv_prog);
@@ -280,6 +279,31 @@ sub encode {
   }
   return $encoded;
 }
+
+#Dies if the address is bad, otherwise returns the type of bech32 address.
+sub check_bech32_address {
+    my $bech32_address = shift;
+    #Decode bech32.
+    my ($human_readable_part, $decoded_hexdecimal_data_ref) = decode_bech32($bech32_address);
+    my @decoded_hexdecimal_data = @{$decoded_hexdecimal_data_ref};
+    #An empty hrp here could indicate a number of errors.
+    die "Invalid bech32 bitcoin address!\n" if (not defined $human_readable_part);
+    #Mainnet bech32 address.
+    if ($bech32_address=~ /^bc1/){
+	if ( scalar @decoded_hexdecimal_data
+	return "Standard Public";
+    }   
+    #Testnet bech32 address.
+    elsif ($bech32_address =~ /^tb1/){
+	return "Multi-Signature";
+    } 
+    #This is valid bech32, but not yet a valid bitcoin address.  It's likely the human readable part is unrecognized. 
+    else{
+	return "Valid bech32, invalid for bitcoin address use";
+    } 
+}
+#6 tests
+#
 
 # Sub to write when everything is working and it's time to integrate into the schulwitz base58 site.
 #sub handle_input_from_website {
