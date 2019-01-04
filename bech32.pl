@@ -77,8 +77,8 @@ sub encode_bech32 {
     my $hrp_input_str = $_[0];
     my $hex_data_input_str = $_[1];  #the data here corresponds to numbers that reference the indexes of the CHARSET
     my @hrp = split(//, $hrp_input_str, length($hrp_input_str));
-    die "Cannot Encode! There must be an even number of hex data input chars!" unless length($hex_data_input_str) % 2 == 0;
-    die "Cannot Encode! Invalid Hexadecimal Character(s)!\n" unless $hex_data_input_str =~ /^[a-f0-9]*$/i;
+    die "Cannot encode bech32. There must be an even number of hex data input chars!" unless length($hex_data_input_str) % 2 == 0;
+    die "Cannot encode bech32. Invalid Hexadecimal Character(s)!\n" unless $hex_data_input_str =~ /^[a-f0-9]*$/i;
     #convert input string into byte array
     my @hex_data = $hex_data_input_str =~ /../g;
     #convert to lower case to satisfy perl's disdain for uppercase
@@ -110,67 +110,62 @@ sub decode_bech32 {
     my $has_lowercase = 0;   #set to false
     my $has_uppercase = 0;   #set to false
     for ($p = 0; $p < scalar @bechArr; ++$p) {
-    #Check if the chars are 'normal' punctuation, numbers, letters
-    if (ord($bechArr[$p]) < 33 || ord($bechArr[$p]) > 126) {
-	return;
+	#Check if the chars are 'Basic Latin' unicode chars.
+	#A good list can be found here: https://en.wikipedia.org/wiki/List_of_Unicode_characters
+	die "Cannot decode bech32 string: One or more characters are improper unicode!" 
+	    if (ord($bechArr[$p]) < 33 || ord($bechArr[$p]) > 126);
+	#Set upper and/or lowercase flags.  Valid addresses must NOT be mixed case.
+	if (ord($bechArr[$p]) >= 97 && ord($bechArr[$p]) <= 122) { $has_lowercase = 1; }
+	if (ord($bechArr[$p]) >= 65 && ord($bechArr[$p]) <= 90) { $has_uppercase = 1; }
     }
-    if (ord($bechArr[$p]) >= 97 && ord($bechArr[$p]) <= 122) {
-	$has_lowercase = 1;
-    }
-    if (ord($bechArr[$p]) >= 65 && ord($bechArr[$p]) <= 90) {
-	$has_uppercase = 1;
-    }
-    }
-    if ($has_lowercase && $has_uppercase) {
-	return;
-    }
+    die "Cannot decode bech32: Address must not be mixed-case!" if ($has_lowercase && $has_uppercase);
     #Convert @bechArr to lowercase
     $_ = lc for @bechArr;
     #my $pos = @bechArr.lastIndexOf('1');
     my $pos;
+    #Find the first '1' in order to determine the human readable part.
     for ($pos = 0; $pos < scalar @bechArr; $pos++){
-	#I think this is broken.  It should take everything before the last instance of '1', not the first.
 	if ( $bechArr[$pos] eq  '1' ) { last; }  
     }
     #my $var = $pos + 7;
     #check if the human readable part and full string aren't too long
-    if ($pos < 1 || $pos + 7 > scalar @bechArr || scalar @bechArr > 90) {
-	return;
-    }
+    #if ($pos < 1 || $pos + 7 > scalar @bechArr || scalar @bechArr > 90)
+    die "Cannot decode bech32: Human Readable Part is too short!" if ($pos < 1 );
+    die "Cannot decode bech32: Data + checksum is too short!" if ($pos + 7 > scalar @bechArr);
+    die "Cannot decode bech32: Address is too long!" if (scalar @bechArr >90);
+
     #my @hrp = @bechArr.substring(0, $pos);
     #Copy the human readable part to @hrp
     my @hrp;
     for($p = 0; $p < $pos; $p++ ){
 	$hrp[$p] = $bechArr[$p];
     }
-    my @data;
+    my @decoded_hex_data;
     my $i;
     my $chset;
     my $bca;
+    #For each of the chars in @bechArr, find the hex value (index) of the bech32 char in CHARSET and save.
     for ($p = $pos + 1; $p < scalar @bechArr; ++$p) {
 	$d = -1;
 	for ($i = 0; $i < scalar @CHARSET; $i++) {
 	    if ($CHARSET[$i] eq $bechArr[$p]){
 		#$d = $bechArr[$p];
-		#d is the index of the char in CHARSET
+		#d is the index of the char in CHARSET and also the value in hex.
 		$d = $i;
 		last;
 	    }
 	}
-	if ($d eq '-1') {
-	    return;
-	}
-	push @data, $d;
+	#Can't find the bech32 char!
+	die "Cannot decode bech32: Invalid bech32 character detected!" if ($d eq '-1');
+	push @decoded_hex_data, $d;
     }
 
     my $hrp_str = join('', @hrp);
-    my $vfyChk = verifyChecksum($hrp_str, \@data);
-    if (!$vfyChk) {
-	return;
-    }
+    my $vfyChk = verifyChecksum($hrp_str, \@decoded_hex_data);
+    die "Cannot decode bech32: Invalid checksum!" if (!$vfyChk);
     my @data_ret;
-    for ($p = 0; $p < scalar @data - 6; $p++){
-	$data_ret[$p] = $data[$p];
+    for ($p = 0; $p < scalar @decoded_hex_data - 6; $p++){
+	$data_ret[$p] = $decoded_hex_data[$p];
     }
     #Convert the values in the return array to 2 digit hex values.
     foreach (@data_ret){ $_ = sprintf("%.2x", $_); }
@@ -202,6 +197,8 @@ sub convertbits {
 	    print "\nFail1\n";
 	    return; #Fail condition.
 	}
+	die "Cannot convert bits from negative values!" if ($value < 0);
+	die "Cannot convert bits.  One or more values in the data array are too big!" if (($value >> $frombits) != 0);
 	$acc = ($acc << $frombits) | $value;
 	$bits += $frombits;
 	while ($bits >= $tobits) {
@@ -214,10 +211,11 @@ sub convertbits {
 	    push @ret, (($acc << ($tobits - $bits)) & $maxv);
 	}
     } elsif ($bits >= $frombits || (($acc << ($tobits - $bits)) & $maxv)) {
-	$test = (($acc << ($tobits - $bits)) & $maxv);
-	print "\ntest:$test";
-	print "\nbits:$bits frombits:$frombits acc:$acc tobits:$tobits maxv:$maxv\n";
-	return;  #Fail condition. 
+	#$test = (($acc << ($tobits - $bits)) & $maxv);
+	#print "\ntest:$test";
+	#print "\nbits:$bits frombits:$frombits acc:$acc tobits:$tobits maxv:$maxv\n";
+	#return;  #Fail condition. 
+	die "Cannot convert bits! The bitmagic failed somehow.";
     }
     # Convert back to hex.
     foreach (@ret){ $_ = sprintf("%.2x", $_); }
@@ -232,25 +230,38 @@ sub decode {
     #  my dec = bech32.decode(addr);
     my ($hrp_string, $data_ref) = decode_bech32($addr);
     my @data = @{$data_ref};
-    if (scalar @data == 0 || $hrp_string ne $hrp || scalar @data < 1 || $data[0] > 16) {
-	print "\nFail decode 1\n";
-	return;
-    }
+
+    die "Cannot decode Segwit address. Decoded human readable part inequivalent input hrp!" if ($hrp_string ne $hrp);
+    die "Cannot decode Segwit address. The program (data) seems to be empty!" if (scalar @data < 1);
+    die "Cannot decode Segwit address. Witness version exceeds 16 (too big)!" if ($data[0] > 16);
+
+    #if (scalar @data == 0 || $hrp_string ne $hrp || scalar @data < 1 || $data[0] > 16) {
+#	return;
+#    }
     #removes the first element of array.  In this case, the witness version, which isn't part of the program.
     my $witness_version = shift @data; 
     #Convert from 5 sig bits to 8 sig bits.
     my $program_ref = convertbits(\@data, 5, 8, 0);
     my @program = @{$program_ref};
     #Check if the program length is too short or too long.
-    if (scalar @program == 0 || scalar @program < 2 || scalar @program > 40) {
-	print "\nFail decode 2\n";
-	return;
-    }
+
+    die "Cannot decode Segwit address. The program (data) is empty!" if (scalar @program == 0);
+    die "Cannot decode Segwit address. The program (data) is too short!" if (scalar @program < 2);
+    die "Cannot decode Segwit address. The program (data) is too long!" if (scalar @program > 40);
+
+    #if (scalar @program == 0 || scalar @program < 2 || scalar @program > 40) {
+#	print "\nFail decode 2\n";
+#	return;
+ #   }
+
+    die "Cannot decode. Segwit addresses with witness version '0' must be either 20 or 32 bytes long!" 
+	if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32);
+
     #bech32 addresses with witness version '0' must be either 20 bytes (P2WPKH) or 32 bytes (P2WSH).
-    if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32) {
-	print "\nFail decode 3\n";
-	return;
-    }
+    #if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32) {
+#	print "\nFail decode 3\n";
+#	return;
+ #   }
     #  return {version: $witness_version, program: res};
     return ($witness_version, \@program);
 }
@@ -272,11 +283,9 @@ sub encode {
     my $ver_and_prog = $version . $converted;
     my $encoded = encode_bech32($hrp, $ver_and_prog);
 
+    #Test if encoded properly. I think this is redundant code after reworking error checking.
     my ($test_witver, $test_prog_ref) = decode($hrp, $encoded);
-    if (not defined $test_witver) {
-	print "\nFail encode 1\n";
-	return;
-    }
+    die "Segwit encode failed. This error message should never be reached!" if not defined $test_witver;
     return $encoded;
 }
 
