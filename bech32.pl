@@ -231,7 +231,10 @@ sub decode {
     my ($hrp_string, $data_ref) = decode_bech32($addr);
     my @data = @{$data_ref};
 
-    die "Cannot decode Segwit address. Decoded human readable part inequivalent input hrp!" if ($hrp_string ne $hrp);
+#print "\nhrpstring:$hrp_string\n";
+#print "\nhrp:$hrp\n";
+
+    #die "Cannot decode Segwit address. Decoded human readable part is inequivalent to the input hrp!" if ($hrp_string ne $hrp);
     die "Cannot decode Segwit address. The program (data) seems to be empty!" if (scalar @data < 1);
     die "Cannot decode Segwit address. Witness version exceeds 16 (too big)!" if ($data[0] > 16);
 
@@ -294,15 +297,16 @@ sub check_bech32_address {
     my $bech32_address = shift;
     #Match all the characters before the last '1'.
     $bech32_address =~ /^(.*)1/;
-    my $human_readable_part = $1;
-print "\n\n testing hrp:$human_readable_part";
+    my $human_readable_part = $1; #$1 refers to group 1 of the regex above - what's inside the parens
+print "\n\n testing hrp:$human_readable_part\n";
     my ($decoded_human_readable_part, $decoded_hex32_data_ref) = decode($human_readable_part, $bech32_address);
     #An empty hrp here could indicate an unspecified error.
-    die "Invalid bech32 bitcoin address!\n" if (not defined $decoded_human_readable_part);
+    #I don't think this check is necessary after adding die error checking
+    #die "Invalid bech32 bitcoin address!\n" if (not defined $decoded_human_readable_part);
     my @decoded_hex32_data = @{$decoded_hex32_data_ref};
-    print "\nlength of string:", scalar @decoded_hex32_data;
+print "\nlength of string:", scalar @decoded_hex32_data;
     #Mainnet bech32 address.
-    if ($bech32_address=~ /^bc1/){
+    if ($bech32_address=~ /^bc1/i){
 	#Mainnet Pay to Witness Private Key Hash
 	if ( scalar @decoded_hex32_data == 20 ){
 	    return "Mainnet P2WPKH";
@@ -313,7 +317,7 @@ print "\n\n testing hrp:$human_readable_part";
 	}else{ return "Invalid address length! Something went wrong.";}
     }   
     #Testnet bech32 address.
-    elsif ($bech32_address =~ /^tb1/){
+    elsif ($bech32_address =~ /^tb1/i){
 	#Testnet Pay to Witness Private Key Hash
         if ( scalar @decoded_hex32_data == 20 ){
             return "Testnet P2WPKH";
@@ -396,8 +400,10 @@ print "\n";
 
 print "\n*****************************************************************************************************";
 print "\n*****************************************************************************************************";
-#my $test_bech32_address_check = "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4";
-my $test_bech32_address_check = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";  #valid P2WSH
+#my $test_bech32_address_check = "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx"; #invalid length
+#my $test_bech32_address_check = "BC1SW50QA3JX3S";  #invalid, too short
+#my $test_bech32_address_check = "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4";  #valid p2wpkh
+#my $test_bech32_address_check = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";  #valid P2WSH
 print "\nRunning bech32 address check on address:$test_bech32_address_check";
 print "\nThe bech32 address decodes as:", check_bech32_address($test_bech32_address_check),"\n";
 
