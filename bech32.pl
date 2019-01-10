@@ -231,41 +231,23 @@ sub decode {
     my ($hrp_string, $data_ref) = decode_bech32($addr);
     my @data = @{$data_ref};
 
-#print "\nhrpstring:$hrp_string\n";
-#print "\nhrp:$hrp\n";
-
     #die "Cannot decode Segwit address. Decoded human readable part is inequivalent to the input hrp!" if ($hrp_string ne $hrp);
     die "Cannot decode Segwit address. The program (data) seems to be empty!" if (scalar @data < 1);
-    die "Cannot decode Segwit address. Witness version exceeds 16 (too big)!" if ($data[0] > 16);
+    die "Cannot decode Segwit address. Witness versions above 16 are not specified!" if ($data[0] > 16);
 
-    #if (scalar @data == 0 || $hrp_string ne $hrp || scalar @data < 1 || $data[0] > 16) {
-#	return;
-#    }
-    #removes the first element of array.  In this case, the witness version, which isn't part of the program.
+    #removes the first element of array.  In this case, the witness version.
     my $witness_version = shift @data; 
     #Convert from 5 sig bits to 8 sig bits.
     my $program_ref = convertbits(\@data, 5, 8, 0);
     my @program = @{$program_ref};
-    #Check if the program length is too short or too long.
 
     die "Cannot decode Segwit address. The program (data) is empty!" if (scalar @program == 0);
     die "Cannot decode Segwit address. The program (data) is too short!" if (scalar @program < 2);
     die "Cannot decode Segwit address. The program (data) is too long!" if (scalar @program > 40);
-
-    #if (scalar @program == 0 || scalar @program < 2 || scalar @program > 40) {
-#	print "\nFail decode 2\n";
-#	return;
- #   }
-
+    #This check is recommended by BIP173.
     die "Cannot decode. Segwit addresses with witness version '0' must be either 20 or 32 bytes long!" 
 	if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32);
 
-    #bech32 addresses with witness version '0' must be either 20 bytes (P2WPKH) or 32 bytes (P2WSH).
-    #if ($witness_version == 0 && scalar @program != 20 && scalar @program != 32) {
-#	print "\nFail decode 3\n";
-#	return;
- #   }
-    #  return {version: $witness_version, program: res};
     return ($witness_version, \@program);
 }
 
@@ -299,44 +281,51 @@ sub check_bech32_address {
     $bech32_address =~ /^(.*)1/;
     my $human_readable_part = $1; #$1 refers to group 1 of the regex above - what's inside the parens
 print "\n\n testing hrp:$human_readable_part\n";
-    my ($decoded_human_readable_part, $decoded_hex32_data_ref) = decode($human_readable_part, $bech32_address);
-    #An empty hrp here could indicate an unspecified error.
-    #I don't think this check is necessary after adding die error checking
-    #die "Invalid bech32 bitcoin address!\n" if (not defined $decoded_human_readable_part);
+    #A successful return from the decode sub guarantees some sort of bech32 address."
+    my ($witness_version, $decoded_hex32_data_ref) = decode($human_readable_part, $bech32_address);
     my @decoded_hex32_data = @{$decoded_hex32_data_ref};
 print "\nlength of string:", scalar @decoded_hex32_data;
-    #Mainnet bech32 address.
-    if ($bech32_address=~ /^bc1/i){
-	#Mainnet Pay to Witness Private Key Hash
-	if ( scalar @decoded_hex32_data == 20 ){
-	    return "Mainnet P2WPKH";
-	#Mainnet Pay to Witness Script Hash
-	}elsif( scalar @decoded_hex32_data == 32){
-	    return "Mainnet P2WSH";
-	#This line should be unreachable. Something went wrong.
-	}else{ return "Invalid address length! Something went wrong.";}
-    }   
-    #Testnet bech32 address.
-    elsif ($bech32_address =~ /^tb1/i){
-	#Testnet Pay to Witness Private Key Hash
-        if ( scalar @decoded_hex32_data == 20 ){
-            return "Testnet P2WPKH";
-        #Testnet Pay to Witness Script Hash
-        }elsif( scalar @decoded_hex32_data == 32){
-            return "Testnet P2WSH";
-        #Something went wrong.
-        }else{ return "Invalid address length! Something went wrong.";}
-    } 
-    #This is valid bech32, but not yet a valid bitcoin address.  It's likely the human readable part is unrecognized. 
-    else{
-	return "Valid bech32, invalid for bitcoin address use";
-    } 
-}
-#6 tests
-#
 
-# Sub to write when everything is working and it's time to integrate into the schulwitz base58 site.
-#sub handle_input_from_website {
+    print "\nWitness version:$witness_version";
+
+    if ($witness_version == 0) {
+	#Mainnet bech32 address.
+	if ($bech32_address=~ /^bc1/i){
+	    #Mainnet Pay to Witness Private Key Hash
+	    if ( scalar @decoded_hex32_data == 20 ){
+		return "Mainnet P2WPKH";
+	    #Mainnet Pay to Witness Script Hash
+	    }elsif( scalar @decoded_hex32_data == 32){
+		return "Mainnet P2WSH";
+	    #This line should be unreachable. Something went wrong.
+	    }else{ return "This addreess length is invalid for witness version '00'!";}
+	}   
+	#Testnet bech32 address.
+	elsif ($bech32_address =~ /^tb1/i){
+	    #Testnet Pay to Witness Private Key Hash
+	    if ( scalar @decoded_hex32_data == 20 ){
+		return "Testnet P2WPKH";
+	    #Testnet Pay to Witness Script Hash
+	    }elsif( scalar @decoded_hex32_data == 32){
+		return "Testnet P2WSH";
+	    #Something went wrong.
+	    }else{ return "This addreess length is invalid for witness version '00'!";}
+	} 
+	#This is valid bech32, but not yet a valid bitcoin address.  It's likely the human readable part is unrecognized. 
+	#else{
+	 #   return "Valid bech32, invalid for bitcoin address use";
+	#} 
+    }else{
+	#show user the witness version
+	#let them know this address won't work with the current version of bitcoin
+	#Check if valid bech32
+    }
+}
+    #6 tests
+    #
+
+    # Sub to write when everything is working and it's time to integrate into the schulwitz base58 site.
+    #sub handle_input_from_website {
 #}
 
 # Test cases from https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/tests.cpp
@@ -403,7 +392,7 @@ print "\n***********************************************************************
 #my $test_bech32_address_check = "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx"; #invalid length
 #my $test_bech32_address_check = "BC1SW50QA3JX3S";  #invalid, too short
 #my $test_bech32_address_check = "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4";  #valid p2wpkh
-#my $test_bech32_address_check = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";  #valid P2WSH
+my $test_bech32_address_check = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";  #valid P2WSH
 print "\nRunning bech32 address check on address:$test_bech32_address_check";
 print "\nThe bech32 address decodes as:", check_bech32_address($test_bech32_address_check),"\n";
 
