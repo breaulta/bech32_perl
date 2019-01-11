@@ -310,15 +310,11 @@ print "\nlength of string:", scalar @decoded_hex32_data;
 		return "Testnet P2WSH";
 	    #Something went wrong.
 	    }else{ return "This addreess length is invalid for witness version '00'!";}
+	}else{
+	    return "Unknown human readable part!";
 	} 
-	#This is valid bech32, but not yet a valid bitcoin address.  It's likely the human readable part is unrecognized. 
-	#else{
-	 #   return "Valid bech32, invalid for bitcoin address use";
-	#} 
     }else{
-	#show user the witness version
-	#let them know this address won't work with the current version of bitcoin
-	#Check if valid bech32
+	return "Valid bech32, but the witness version '$witness_version' is unspecified for the current release of bitcoin.";
     }
 }
     #6 tests
@@ -392,7 +388,7 @@ print "\n***********************************************************************
 #my $test_bech32_address_check = "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx"; #invalid length
 #my $test_bech32_address_check = "BC1SW50QA3JX3S";  #invalid, too short
 #my $test_bech32_address_check = "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4";  #valid p2wpkh
-my $test_bech32_address_check = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";  #valid P2WSH
+#my $test_bech32_address_check = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";  #valid P2WSH
 print "\nRunning bech32 address check on address:$test_bech32_address_check";
 print "\nThe bech32 address decodes as:", check_bech32_address($test_bech32_address_check),"\n";
 
