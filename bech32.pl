@@ -323,7 +323,7 @@ print "\nlength of string:", scalar @decoded_hex32_data;
     # Sub to write when everything is working and it's time to integrate into the schulwitz base58 site.
     #sub handle_input_from_website {
 #}
-
+=begin comment
 # Test cases from https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/tests.cpp
 my @testcases = ('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4', 'bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx', 'BC1SW50QA3JX3S', 'bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj', 'bc1qcpwqjl9yzw33puu4hnuhvj5kmv9t5evmkde2rf');
 
@@ -392,6 +392,11 @@ print "\n***********************************************************************
 print "\nRunning bech32 address check on address:$test_bech32_address_check";
 print "\nThe bech32 address decodes as:", check_bech32_address($test_bech32_address_check),"\n";
 
-
-
+=end comment
+=cut
+my $i = 0;
+foreach (@ARGV) {
+    print "ith iteration=$i, contents=$_\n";
+    $i++;
+}
 
