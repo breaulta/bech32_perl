@@ -284,6 +284,8 @@ sub check_bech32_address {
     my @decoded_hex_data = @{$decoded_hex_data_ref};
     #Logic block.
     if ($witness_version == 0) {
+	#die "test eval";
+	#print "test eval";
 	#Mainnet bech32 address.
 	if ($bech32_address=~ /^bc1/i){
 	    #Mainnet Pay to Witness Private Key Hash
@@ -318,6 +320,9 @@ sub check_bech32_address {
 my $i = 0;
 my $stdout;
 foreach (@ARGV) {
+    #eval { check_bech32_address($_) }; warn $@ if $@;
+
+
     $stdout = check_bech32_address($_);
     print $stdout;
 }
