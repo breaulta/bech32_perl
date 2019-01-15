@@ -180,7 +180,6 @@ sub convertbits {
     my $frombits = $_[1];
     my $tobits = $_[2];
     my $pad_bool = $_[3];
-
     my $test;
 
     my @data = @{$data_ref};
