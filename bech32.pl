@@ -85,7 +85,7 @@ sub encode_bech32 {
     my $chksum_ref = createChecksum($hrp_input_str, \@hex_data);
     my @chksum = @{$chksum_ref};
     my @print_chksum = @{$chksum_ref};
-    print "\nComputed Checksum: ";
+#    print "\nComputed Checksum: ";
     foreach (@print_chksum){ 
 	$_ = hex($_);
 	print "$_ ";
@@ -184,8 +184,8 @@ sub convertbits {
     my $test;
 
     my @data = @{$data_ref};
-    print "\nEntering convertbits.\nData in the data array:";
-    foreach (@data) { print "$_ ";}
+    #print "\nEntering convertbits.\nData in the data array:";
+#    foreach (@data) { print "$_ ";}
     my $acc = 0;
     my $bits = 0;
     my @ret;
@@ -193,10 +193,10 @@ sub convertbits {
     for (my $p = 0; $p < scalar @data; ++$p) {
 	my $value = hex($data[$p]);
 	#print "\nvalue:$value";
-	if ($value < 0 || ($value >> $frombits) != 0) {
-	    print "\nFail1\n";
-	    return; #Fail condition.
-	}
+#	if ($value < 0 || ($value >> $frombits) != 0) {
+#	    print "\nFail1\n";
+#	    return; #Fail condition.
+#	}
 	die "Cannot convert bits from negative values!" if ($value < 0);
 	die "Cannot convert bits.  One or more values in the data array are too big!" if (($value >> $frombits) != 0);
 	$acc = ($acc << $frombits) | $value;
@@ -268,9 +268,9 @@ sub encode {
     my $ver_and_prog = $version . $converted;
     my $encoded = encode_bech32($hrp, $ver_and_prog);
 
-    #Test if encoded properly. I think this is redundant code after reworking error checking.
+    #Test if encoded properly. 
     my ($test_witver, $test_prog_ref) = decode($hrp, $encoded);
-    die "Segwit encode failed. This error message should never be reached!" if not defined $test_witver;
+    die "Segwit encode failed. This error message should never be reached!" if not defined $test_witver; 
     return $encoded;
 }
 
@@ -280,22 +280,18 @@ sub check_bech32_address {
     #Match all the characters before the last '1'.
     $bech32_address =~ /^(.*)1/;
     my $human_readable_part = $1; #$1 refers to group 1 of the regex above - what's inside the parens
-print "\n\n testing hrp:$human_readable_part\n";
     #A successful return from the decode sub guarantees some sort of bech32 address."
-    my ($witness_version, $decoded_hex32_data_ref) = decode($human_readable_part, $bech32_address);
-    my @decoded_hex32_data = @{$decoded_hex32_data_ref};
-print "\nlength of string:", scalar @decoded_hex32_data;
-
-    print "\nWitness version:$witness_version";
-
+    my ($witness_version, $decoded_hex_data_ref) = decode($human_readable_part, $bech32_address);
+    my @decoded_hex_data = @{$decoded_hex_data_ref};
+    #Logic block.
     if ($witness_version == 0) {
 	#Mainnet bech32 address.
 	if ($bech32_address=~ /^bc1/i){
 	    #Mainnet Pay to Witness Private Key Hash
-	    if ( scalar @decoded_hex32_data == 20 ){
+	    if ( scalar @decoded_hex_data == 20 ){
 		return "Mainnet P2WPKH";
 	    #Mainnet Pay to Witness Script Hash
-	    }elsif( scalar @decoded_hex32_data == 32){
+	    }elsif( scalar @decoded_hex_data == 32){
 		return "Mainnet P2WSH";
 	    #This line should be unreachable. Something went wrong.
 	    }else{ return "This addreess length is invalid for witness version '00'!";}
@@ -303,10 +299,10 @@ print "\nlength of string:", scalar @decoded_hex32_data;
 	#Testnet bech32 address.
 	elsif ($bech32_address =~ /^tb1/i){
 	    #Testnet Pay to Witness Private Key Hash
-	    if ( scalar @decoded_hex32_data == 20 ){
+	    if ( scalar @decoded_hex_data == 20 ){
 		return "Testnet P2WPKH";
 	    #Testnet Pay to Witness Script Hash
-	    }elsif( scalar @decoded_hex32_data == 32){
+	    }elsif( scalar @decoded_hex_data == 32){
 		return "Testnet P2WSH";
 	    #Something went wrong.
 	    }else{ return "This addreess length is invalid for witness version '00'!";}
@@ -317,6 +313,16 @@ print "\nlength of string:", scalar @decoded_hex32_data;
 	return "Valid bech32, but the witness version '$witness_version' is unspecified for the current release of bitcoin.";
     }
 }
+
+
+
+my $i = 0;
+my $stdout;
+foreach (@ARGV) {
+    $stdout = check_bech32_address($_);
+    print $stdout;
+}
+
     #6 tests
     #
 
@@ -394,9 +400,4 @@ print "\nThe bech32 address decodes as:", check_bech32_address($test_bech32_addr
 
 =end comment
 =cut
-my $i = 0;
-foreach (@ARGV) {
-    print "ith iteration=$i, contents=$_\n";
-    $i++;
-}
 
