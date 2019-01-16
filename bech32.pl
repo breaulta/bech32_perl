@@ -24,19 +24,20 @@ sub polymod {
 
 # Expand a human readable part for use in checksum computation.
 sub hrpExpand {
-    my $hrp_str = $_[0];
+    # 'shift' reads in the first argument passed to the sub.
+    my $hrp_str = shift;
     # Convert the human readable part string into an array of chars.
-    my @hrp = split(//, $hrp_str, length($hrp_str));
+    my @human_readable_part = split(//, $hrp_str, length($hrp_str));
     my @ret;  #Initialize the return array.
-    my $p;
-    for ($p = 0; $p < scalar @hrp; ++$p) { # scalar here returns the number of values in the @hrp array.
-	push @ret, ord($hrp[$p]) >> 5;  # Start with the high bits. ord() returns the unicode of a char.
+    my $i; # i for index.
+    for ($i = 0; $i < scalar @human_readable_part; ++$i) { # scalar here returns the number of values in the @hrp array.
+	push @ret, ord($human_readable_part[$i]) >> 5;  # Start with the high bits. ord() returns the unicode of a char.
     }
     push @ret, 0;
-    for ($p = 0; $p < scalar @hrp; ++$p) {
-	push @ret, ord($hrp[$p]) & 31;  # And now the low bits.
+    for ($i = 0; $i < scalar @human_readable_part; ++$i) {
+	push @ret, ord($human_readable_part[$i]) & 31;  # And now the low bits.
     }
-    return \@ret;  # The backslash means to return a reference to the @ret array.
+    return \@ret;  # The backslash indicates that we are returning a reference to the @ret array.
 }
 
 sub verifyChecksum {
