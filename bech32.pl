@@ -42,19 +42,19 @@ sub hrpExpand {
 
 sub verifyChecksum {
     my $hrp_str = $_[0];
-    my $data_ref = $_[1];  # Pass in the reference to the data array.
-    my @data = @{$data_ref};  # Copy the values referenced in the data array to the @data array.
-    my $return;
-    my $exp_ref = hrpExpand($hrp_str);
-    my @hrp_exp = @{$exp_ref};
-    push @hrp_exp, @data;  # [ hrp_exp values, data values ]
-    my $poly = polymod(\@hrp_exp); # I need a better variable name here.
+    my $data_to_checksum_ref = $_[1];  # Pass in the reference to the data array.
+    my @data_to_checksum = @{$data_to_checksum_ref};  # Copy the values referenced in the data array to the @data array.
+    my $return_flag; # We're using this as a boolean variable.
+    my $hrp_expanded_ref = hrpExpand($hrp_str);
+    my @hrp_expanded = @{$hrp_expanded_ref};
+    push @hrp_expanded, @data_to_checksum;  # [ hrp_exp values, data values ]
+    my $poly = polymod(\@hrp_expanded); # I need a better variable name here.
     if ( $poly  == 1 ){
-	$return = 1;
+	$return_flag = 1;
     }else{
-	$return = 0;
+	$return_flag= 0;
     }
-    return $return;
+    return $return_flag;
 }
 
 sub createChecksum {   #Returns decimal Array of 6 values.
@@ -325,7 +325,7 @@ foreach (@ARGV) {
 
 
     $stdout = check_bech32_address($_);
-    print $stdout;
+    print "$stdout\n";
 }
 
     #6 tests
