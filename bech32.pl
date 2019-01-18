@@ -49,7 +49,7 @@ sub hrpExpand {
     }
     return \@ret;  # The backslash indicates that we are returning a reference to the @ret array.
 }
-# This sub handles the polymod function. It takes the hrp string and expands it into an array.
+# This sub handles one of the polymod functions. It takes the hrp string and expands it into an array.
 # And then stacks that onto the passed in hex_data array.
 # The combined array is then passed into the polymod function, which by bitmagic determines if the checksum is good or bad.
 sub verifyChecksum {
@@ -72,7 +72,7 @@ sub verifyChecksum {
     return $checksum_verified;
 }
 
-#
+# Computes a 6 char long checksum array and returns it as an array reference.
 sub createChecksum {   #Returns decimal Array of 6 values.
     my $hrp_str = $_[0];
     my $data_ref = $_[1];
@@ -82,7 +82,7 @@ sub createChecksum {   #Returns decimal Array of 6 values.
     $_ = hex($_) for @data; # Convert each hex value in the @data array to decimal.
     push @data, (0, 0, 0, 0, 0, 0); 
     push @hrp_exp, @data; # Combine the two arrays into @hrp_exp.
-    my $mod = polymod(\@hrp_exp) ^ 1; # xor with 1.
+    my $mod = polymod(\@hrp_exp) ^ 1; # ^ 1 here means xor with 1.
     my @ret;
     for (my $p = 0; $p < 6; ++$p) {
 	push @ret, (($mod >> 5 * (5 - $p)) & 31); # bitmagic
@@ -90,78 +90,87 @@ sub createChecksum {   #Returns decimal Array of 6 values.
     return \@ret;
 }
 
+# bech32 encoding doesn't care that the witness version and program are different things; it encodes them to the same output.
+# Returns a bech32 encoded string.
 sub encode_bech32 {
     my $hrp_input_str = $_[0];
-    my $hex_data_input_str = $_[1];  #the data here corresponds to numbers that reference the indexes of the CHARSET
-    my @hrp = split(//, $hrp_input_str, length($hrp_input_str));
-    die "Cannot encode bech32. There must be an even number of hex data input chars!" unless length($hex_data_input_str) % 2 == 0;
-    die "Cannot encode bech32. Invalid Hexadecimal Character(s)!\n" unless $hex_data_input_str =~ /^[a-f0-9]*$/i;
-    #convert input string into byte array
-    my @hex_data = $hex_data_input_str =~ /../g;
-    #convert to lower case to satisfy perl's disdain for uppercase
-    my $chksum_ref = createChecksum($hrp_input_str, \@hex_data);
+    #the data here corresponds to hex numbers that reference the indexes of the CHARSET.
+    my $versionandprogram_hex_data = $_[1];  
+    # Transform $hrp_input_str string into the @hrp array.
+    my @hrp = split(//, $hrp_input_str, length($hrp_input_str)); 
+    # Check for an errant nibble.
+    die "Cannot encode bech32. There must be an even number of hex data input chars!" unless length($versionandprogram_hex_data) % 2 == 0;
+    die "Cannot encode bech32. Invalid Hexadecimal Character(s)!\n" unless $versionandprogram_hex_data =~ /^[a-f0-9]*$/i;
+    # Convert input string into byte (2 chars) array.
+    my @versionandprogram_hex_data = $versionandprogram_hex_data =~ /../g;
+    my $chksum_ref = createChecksum($hrp_input_str, \@versionandprogram_hex_data);
     my @chksum = @{$chksum_ref};
     my @print_chksum = @{$chksum_ref};
-    $_ = hex($_) for @hex_data;
-    push @hex_data, @chksum;
-    push @hrp, 1; #should be bc1 (or tc1 for the testnet) now, and we're going to append the dereferenced char array
-    for (my $p = 0; $p < scalar @hex_data; ++$p) {
-    #looks like we're decoding indexes of CHARSET from @data into their respective chars for an encode
-	push @hrp, $CHARSET[$hex_data[$p]];
+    # Convert hex bytes into decimal values that can then be used to reference encoded bech32 chars in the CHARSET array.
+    $_ = hex($_) for @versionandprogram_hex_data;
+    # [ versionandprogram_hex_data ], [ chksum ]
+    push @versionandprogram_hex_data, @chksum;
+    push @hrp, 1; # In a proper bech32 encoding, the final '1' denotes the end of the human readable part.
+    # Loop through the @versionandprogram_hex_data array.
+    for (my $p = 0; $p < scalar @versionandprogram_hex_data; ++$p) {
+	# Encode each value as bech32 and append it to the @hrp array.
+	# [ hrp ], 1, [ bech32-encoded @versionandprogram_hex_data ]
+	push @hrp, $CHARSET[$versionandprogram_hex_data[$p]];
     }
-    my $ret_str = join('', @hrp);
-    return $ret_str;
+    my $encoded_bech32_str = join('', @hrp);
+    return $encoded_bech32_str;
 }
 
+# This sub takes a (presumably) bech32 encoded string and decodes it to a 5 bit 'squashed' byte array.
 sub decode_bech32 {
-    my $bechString = $_[0];
-    #convert string to array
-    my @bechArr = split (//, $bechString, length($bechString));
-    my $p;
-    my $d;
+    my $bech32_encoded_string = shift;
+    my @bech32_encoded = split (//, $bech32_encoded_string, length($bech32_encoded_string));
+    my $p; # p for pointer?
+    my $d; # d for decimal value of the decoded bech32 char.
     my $has_lowercase = 0;   #set to false
     my $has_uppercase = 0;   #set to false
-    for ($p = 0; $p < scalar @bechArr; ++$p) {
-	#Check if the chars are 'Basic Latin' unicode chars.
+    for ($p = 0; $p < scalar @bech32_encoded; ++$p) {
+	#Check if the chars in @bech32_encoded are 'Basic Latin' unicode chars.
 	#A good list can be found here: https://en.wikipedia.org/wiki/List_of_Unicode_characters
 	die "Cannot decode bech32 string: One or more characters are improper unicode!" 
-	    if (ord($bechArr[$p]) < 33 || ord($bechArr[$p]) > 126);
+	    if (ord($bech32_encoded[$p]) < 33 || ord($bech32_encoded[$p]) > 126);
 	#Set upper and/or lowercase flags.  Valid addresses must NOT be mixed case.
-	if (ord($bechArr[$p]) >= 97 && ord($bechArr[$p]) <= 122) { $has_lowercase = 1; }
-	if (ord($bechArr[$p]) >= 65 && ord($bechArr[$p]) <= 90) { $has_uppercase = 1; }
+	if (ord($bech32_encoded[$p]) >= 97 && ord($bech32_encoded[$p]) <= 122) { $has_lowercase = 1; }
+	if (ord($bech32_encoded[$p]) >= 65 && ord($bech32_encoded[$p]) <= 90) { $has_uppercase = 1; }
     }
     die "Cannot decode bech32: Address must not be mixed-case!" if ($has_lowercase && $has_uppercase);
-    #Convert @bechArr to lowercase
-    $_ = lc for @bechArr;
-    #my $pos = @bechArr.lastIndexOf('1');
+    #Convert @bech32_encoded to lowercase
+    $_ = lc for @bech32_encoded;
+    #my $pos = @bech32_encoded.lastIndexOf('1');
     my $pos;
-    #Find the first '1' in order to determine the human readable part.
-    for ($pos = 0; $pos < scalar @bechArr; $pos++){
-	if ( $bechArr[$pos] eq  '1' ) { last; }  
+    #THIS SHOULD BE THE LAST '1'. 
+    # CONFIRMED: needs to be the last '1'
+    # We're trying to find the value of the $pos here.
+    for ($pos = 0; $pos < scalar @bech32_encoded; $pos++){ #Broken
+	if ( $bech32_encoded[$pos] eq  '1' ) { last; }  
     }
-    #my $var = $pos + 7;
-    #check if the human readable part and full string aren't too long
-    #if ($pos < 1 || $pos + 7 > scalar @bechArr || scalar @bechArr > 90)
+    # Also #Broken
     die "Cannot decode bech32: Human Readable Part is too short!" if ($pos < 1 );
-    die "Cannot decode bech32: Data + checksum is too short!" if ($pos + 7 > scalar @bechArr);
-    die "Cannot decode bech32: Address is too long!" if (scalar @bechArr >90);
+    die "Cannot decode bech32: Data + checksum is too short!" if ($pos + 7 > scalar @bech32_encoded);
+    die "Cannot decode bech32: Address is too long!" if (scalar @bech32_encoded >90);
 
-    #my @hrp = @bechArr.substring(0, $pos);
     #Copy the human readable part to @hrp
+    # If the last position of the hrp is found correctly and placed into $pos,
     my @hrp;
+    # This for loop will correctly place the data from @bech32_encoded into @hrp.
     for($p = 0; $p < $pos; $p++ ){
-	$hrp[$p] = $bechArr[$p];
+	$hrp[$p] = $bech32_encoded[$p];
     }
     my @decoded_hex_data;
     my $i;
     my $chset;
     my $bca;
-    #For each of the chars in @bechArr, find the hex value (index) of the bech32 char in CHARSET and save.
-    for ($p = $pos + 1; $p < scalar @bechArr; ++$p) {
+    #For each of the chars in @bech32_encoded, find the hex value (index) of the bech32 char in CHARSET and save.
+    for ($p = $pos + 1; $p < scalar @bech32_encoded; ++$p) {
 	$d = -1;
 	for ($i = 0; $i < scalar @CHARSET; $i++) {
-	    if ($CHARSET[$i] eq $bechArr[$p]){
-		#$d = $bechArr[$p];
+	    if ($CHARSET[$i] eq $bech32_encoded[$p]){
+		#$d = $bech32_encoded[$p];
 		#d is the index of the char in CHARSET and also the value in hex.
 		$d = $i;
 		last;
@@ -289,8 +298,8 @@ sub encode {
 sub check_bech32_address {
     my $bech32_address = shift;
     #Match all the characters before the last '1'.
-    $bech32_address =~ /^(.*)1/;
-    my $human_readable_part = $1; #$1 refers to group 1 of the regex above - what's inside the parens
+    $bech32_address =~ /^(.*)1/; # Looks like this properly takes till the last '1'.
+    my $human_readable_part = $1; #$1 refers to group 1 of the regex above - everything until the last '1'.
     #A successful return from the decode sub guarantees some sort of bech32 address."
     my ($witness_version, $decoded_hex_data_ref) = decode($human_readable_part, $bech32_address);
     my @decoded_hex_data = @{$decoded_hex_data_ref};
