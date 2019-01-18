@@ -147,6 +147,7 @@ sub decode_bech32 {
     # CONFIRMED: needs to be the last '1'
     # We're trying to find the value of the $pos here.
     for ($pos = 0; $pos < scalar @bech32_encoded; $pos++){ #Broken
+	# Loops through until it finds a '1'
 	if ( $bech32_encoded[$pos] eq  '1' ) { last; }  
     }
     # Also #Broken
