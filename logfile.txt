@@ -1,0 +1,169 @@
+Cannot decode bech32: Address must not be mixed-case! at bech32.pl line 127.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:BC, 00, 75 1e 76 e8 19 91 96 d4 54 94 1c 45 d1 b3 a3 23 f1 43 3b d6
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx
+checked results:Valid bech32, but the witness version '01' is unspecified for the current release of bitcoin.
+Testing decode and encode:Decode return:bc, 01, 75 1e 76 e8 19 91 96 d4 54 94 1c 45 d1 b3 a3 23 f1 43 3b d6 75 1e 76 e8 19 91 96 d4 54 94 1c 45 d1 b3 a3 23 f1 43 3b d6
+Encode return:bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx
+Success for encode/decode!
+Cannot decode bech32: Address must not be mixed-case! at bech32.pl line 127.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: BC1SW50QA3JX3S
+checked results:Valid bech32, but the witness version '10' is unspecified for the current release of bitcoin.
+Testing decode and encode:Decode return:BC, 10, 75 1e
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj
+checked results:Valid bech32, but the witness version '02' is unspecified for the current release of bitcoin.
+Testing decode and encode:Decode return:bc, 02, 75 1e 76 e8 19 91 96 d4 54 94 1c 45 d1 b3 a3 23
+Encode return:bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qcpwqjl9yzw33puu4hnuhvj5kmv9t5evmkde2rf
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:bc, 00, c0 5c 09 7c a4 13 a3 10 f3 95 bc f9 76 4a 96 db 0a ba 65 9b
+Encode return:bc1qcpwqjl9yzw33puu4hnuhvj5kmv9t5evmkde2rf
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3
+checked results:Mainnet P2WSH
+Testing decode and encode:Decode return:bc, 00, 18 63 14 3c 14 c5 16 68 04 bd 19 20 33 56 da 13 6c 98 56 78 cd 4d 27 a1 b8 c6 32 96 04 90 32 62
+Encode return:bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3
+Success for encode/decode!
+Cannot decode bech32: Data + checksum is too short! at bech32.pl line 140.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: fevvvvrwghterhhhhhhhy
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3
+checked results:Mainnet P2WSH
+Testing decode and encode:Decode return:bc, 00, 18 63 14 3c 14 c5 16 68 04 bd 19 20 33 56 da 13 6c 98 56 78 cd 4d 27 a1 b8 c6 32 96 04 90 32 62
+Encode return:bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3
+Success for encode/decode!
+Cannot decode bech32: Invalid bech32 character detected! at bech32.pl line 165.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs
+Cannot convert bits! The bitmagic failed somehow. at bech32.pl line 223.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw
+Cannot decode Segwit address. The program (data) seems to be empty! at bech32.pl line 240.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: ?1ezyfcl
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:bc, 00, 75 1e 76 e8 19 91 96 d4 54 94 1c 45 d1 b3 a3 23 f1 43 3b d6
+Encode return:bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1q4hr5jmmcqr8chz4mu5976slmjzru0lhnectvjt
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:bc, 00, ad c7 49 6f 78 00 cf 8b 8a bb e5 0b ed 43 fb 90 87 c7 fe f3
+Encode return:bc1q4hr5jmmcqr8chz4mu5976slmjzru0lhnectvjt
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1quwcnduxe33tzmswxmfu72ft3w5dzu0a7c7lzm7
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:bc, 00, e3 b1 36 f0 d9 8c 56 2d c1 c6 da 79 e5 25 71 75 1a 2e 3f be
+Encode return:bc1quwcnduxe33tzmswxmfu72ft3w5dzu0a7c7lzm7
+Success for encode/decode!
+Cannot decode bech32: Invalid checksum! at bech32.pl line 171.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bbc1quwcnduxe33tzmswxmfu72ft3w5dzu0a7c7lzm7
+Cannot decode bech32: Invalid checksum! at bech32.pl line 171.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1quwcnduxe33tzmswxmfu72ft3w5dzu0a7c7lzm
+Cannot decode bech32: Invalid checksum! at bech32.pl line 171.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1quwcnduxe33tzmswxmfu72t3w5dzu0a7c7lzm7
+Cannot decode bech32: Invalid checksum! at bech32.pl line 171.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1quwcnduxe33tzmswxmfu72ft3w5dzu0a7c7lzm7q
+Cannot decode bech32: Invalid checksum! at bech32.pl line 171.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: %bc1quwcnduxe33tzmswxmfu72ft3w5dzu0a7c7lzm7
+Cannot decode bech32: Invalid bech32 character detected! at bech32.pl line 165.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1quwcnduxe#33tzmswxmfu72ft3w5dzu0a7c7lzm7
+Cannot decode bech32: Address must not be mixed-case! at bech32.pl line 127.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1quwcnduxe33tzmswxmfu72ft3w5dzu0a7c7lzm7D
+Cannot decode bech32: Invalid checksum! at bech32.pl line 171.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1quwcnduxe3wxmfu72ft3w5dzu0a7c7lzm7
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qekk0txvhherq0qj3fpz2ulf9j55nq34gjg4tmv
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:bc, 00, cd ac f5 99 97 be 46 07 82 51 48 44 ae 7d 25 95 29 30 46 a8
+Encode return:bc1qekk0txvhherq0qj3fpz2ulf9j55nq34gjg4tmv
+Success for encode/decode!
+Cannot decode bech32: Invalid checksum! at bech32.pl line 171.
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bsc1q3mgmxl78e403khhpr34424zrjzs87a0wxz9rjf3rftvdh7nu24rqvmc54h
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qpa80cjxyn24yn7mxjha5fwctyg4mg9gnm0405z
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:bc, 00, 0f 4e fc 48 c4 9a aa 49 fb 66 95 fb 44 bb 0b 22 2b b4 15 13
+Encode return:bc1qpa80cjxyn24yn7mxjha5fwctyg4mg9gnm0405z
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qv5dnckmesdp2wry6cf6hv4kv944lwfns5p2hvqwunytqs6ytep0q9hurkf
+checked results:Mainnet P2WSH
+Testing decode and encode:Decode return:bc, 00, 65 1b 3c 5b 79 83 42 a7 0c 9a c2 75 76 56 cc 2d 6b f7 26 70 a0 55 76 01 dc 99 16 08 68 8b c8 5e
+Encode return:bc1qv5dnckmesdp2wry6cf6hv4kv944lwfns5p2hvqwunytqs6ytep0q9hurkf
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qn8ymuyx6r5dhj0qpfmhlz5chrgjcsppxrp93kx
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:bc, 00, 99 c9 be 10 da 1d 1b 79 3c 01 4e ef f1 53 17 1a 25 88 04 26
+Encode return:bc1qn8ymuyx6r5dhj0qpfmhlz5chrgjcsppxrp93kx
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qrqr2q7l880qp6zgvkq9gycf5p0uanrgstvxkxzea2q6ac8xjrvcqqest6g
+checked results:Mainnet P2WSH
+Testing decode and encode:Decode return:bc, 00, 18 06 a0 7b e7 3b c0 1d 09 0c b0 0a 82 61 34 0b f9 d9 8d 10 5b 0d 63 0b 3d 50 35 dc 1c d2 1b 30
+Encode return:bc1qrqr2q7l880qp6zgvkq9gycf5p0uanrgstvxkxzea2q6ac8xjrvcqqest6g
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qqm70v3yn0rl4mudnrstp7hmmztzj6ju83knz26
+checked results:Mainnet P2WPKH
+Testing decode and encode:Decode return:bc, 00, 06 fc f6 44 93 78 ff 5d f1 b3 1c 16 1f 5f 7b 12 c5 2d 4b 87
+Encode return:bc1qqm70v3yn0rl4mudnrstp7hmmztzj6ju83knz26
+Success for encode/decode!
+
+******************************Starting test for bech32.pl**********************************
+Testing check_bech32_address on address: bc1qnddq2hnwzrlfvvh7u5p0dj423wnqhgr7ssudlc0v3vdpm7v2qufspe780k
+checked results:Mainnet P2WSH
+Testing decode and encode:Decode return:bc, 00, 9b 5a 05 5e 6e 10 fe 96 32 fe e5 02 f6 ca aa 8b a6 0b a0 7e 84 38 df e1 ec 8b 1a 1d f9 8a 07 13
+Encode return:bc1qnddq2hnwzrlfvvh7u5p0dj423wnqhgr7ssudlc0v3vdpm7v2qufspe780k
+Success for encode/decode!

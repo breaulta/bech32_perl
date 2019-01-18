@@ -11,10 +11,11 @@ my $stdout;
 chomp @testcases;
 # open with '>' option writes a new file and 'clobbers' the old file if one exists.
 open (my $out_fd, '>', 'logfile.txt') or die "logfile.txt: $!";
+# Test check_bech32_address and 
 for my $testcase (@testcases) {
     # qx// is equivalent to backticks which returns STDOUT. '2>&1' sends STDERR to STDOUT.
     $stdout = qx/perl bech32.pl $testcase 2>&1/; 
-    print "$testcase $stdout";
-    print $out_fd "$testcase $stdout"; # Prints to logfile.
+    print $stdout;
+    print $out_fd $stdout; # Prints to logfile.
 }
 close $out_fd;

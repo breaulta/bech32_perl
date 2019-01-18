@@ -8,7 +8,7 @@ my @CHARSET = ('q','p','z','r','y','9','x','8','g','f','2','t','v','d','w','0','
 my @GENERATOR = (0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3);
 sub polymod {
     my $val_ref = $_[0];
-    my @values = @{$val_ref};
+    my @values = @{$val_ref}; # Convert the array reference $val_ref to a proper array; @values.
     my $chk = 1;
     for (my $p = 0; $p < scalar @values; ++$p) {
 	my $top = $chk >> 25;
@@ -23,6 +23,9 @@ sub polymod {
 }
 
 # Expand a human readable part for use in checksum computation.
+# There will be N number of h bits representing the higher ord, and N number of l bits representing the lower ord.
+# So hrpExpand will return an array that looks like this: [N number of h chars], 0, [N number of l chars]
+# Reference BIP173 for additional information: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki 
 sub hrpExpand {
     # 'shift' reads in the first argument passed to the sub.
     my $hrp_str = shift;
@@ -30,31 +33,43 @@ sub hrpExpand {
     my @human_readable_part = split(//, $hrp_str, length($hrp_str));
     my @ret;  #Initialize the return array.
     my $i; # i for index.
-    for ($i = 0; $i < scalar @human_readable_part; ++$i) { # scalar here returns the number of values in the @hrp array.
-	push @ret, ord($human_readable_part[$i]) >> 5;  # Start with the high bits. ord() returns the unicode of a char.
+    # scalar here returns the number of values in the @human_readable_part array.
+    for ($i = 0; $i < scalar @human_readable_part; ++$i) { 
+	# Start with the high bits. ord() returns the numeraic value (unicode) of a char.
+	# >> 5 is a right bit shift of 5 places, effectively dividing by 32 (2^5). (I don't know why it isn't *4 except for the previous sentence.)
+	# xxxxyyyy => 0000xxxx
+	push @ret, ord($human_readable_part[$i]) >> 5;
     }
-    push @ret, 0;
+    # A '0' needs to be in the middle according to BIP173.
+    push @ret, 0; 
     for ($i = 0; $i < scalar @human_readable_part; ++$i) {
+	# yyyyxxxx => 0000xxxx
+	# & 31 is a bit multiplication by 00001111, effectively zeroing out the 4 highest bits.
 	push @ret, ord($human_readable_part[$i]) & 31;  # And now the low bits.
     }
     return \@ret;  # The backslash indicates that we are returning a reference to the @ret array.
 }
-
+# This sub handles the polymod function. It takes the hrp string and expands it into an array.
+# And then stacks that onto the passed in hex_data array.
+# The combined array is then passed into the polymod function, which by bitmagic determines if the checksum is good or bad.
 sub verifyChecksum {
-    my $hrp_str = $_[0];
-    my $data_to_checksum_ref = $_[1];  # Pass in the reference to the data array.
-    my @data_to_checksum = @{$data_to_checksum_ref};  # Copy the values referenced in the data array to the @data array.
-    my $return_flag; # We're using this as a boolean variable.
+    my $hrp_str = $_[0]; # The human readable part string.
+    my $hex_data_to_checksum_ref = $_[1];  # Pass in the reference to the data array.
+    # Copy the values referenced in the hex data array to the @hex_data array.
+    # We need to find out if this hex_data array is precisely the segwit 'program'.
+    my @hex_data_to_checksum = @{$hex_data_to_checksum_ref};  
+    my $checksum_verified; # We're using this as a boolean variable. 
     my $hrp_expanded_ref = hrpExpand($hrp_str);
     my @hrp_expanded = @{$hrp_expanded_ref};
-    push @hrp_expanded, @data_to_checksum;  # [ hrp_exp values, data values ]
-    my $poly = polymod(\@hrp_expanded); # I need a better variable name here.
-    if ( $poly  == 1 ){
-	$return_flag = 1;
-    }else{
-	$return_flag= 0;
-    }
-    return $return_flag;
+    push @hrp_expanded, @hex_data_to_checksum;  # [ hrp_exp values, hex_data values ]
+    # I'm still unsure what exactly polymod does, hence, $poly
+    # Although it is clear that a return of 1 verifies the checksum.
+    my $poly = polymod(\@hrp_expanded); 
+    # Return 'true': the checksum has been verified.
+    if ( $poly  == 1 ){ $checksum_verified = 1;}
+    # Return 'false': the checksum failed to verify.
+    else{ $checksum_verified = 0;}
+    return $checksum_verified;
 }
 
 sub createChecksum {   #Returns decimal Array of 6 values.
@@ -86,11 +101,6 @@ sub encode_bech32 {
     my $chksum_ref = createChecksum($hrp_input_str, \@hex_data);
     my @chksum = @{$chksum_ref};
     my @print_chksum = @{$chksum_ref};
-#    print "\nComputed Checksum: ";
-    foreach (@print_chksum){ 
-	$_ = hex($_);
-	print "$_ ";
-    }
     $_ = hex($_) for @hex_data;
     push @hex_data, @chksum;
     push @hrp, 1; #should be bc1 (or tc1 for the testnet) now, and we're going to append the dereferenced char array
@@ -162,7 +172,7 @@ sub decode_bech32 {
     }
 
     my $hrp_str = join('', @hrp);
-    my $vfyChk = verifyChecksum($hrp_str, \@decoded_hex_data);
+    my $vfyChk = verifyChecksum($hrp_str, \@decoded_hex_data); # Passes in the decoded hex representation of the bech32 char
     die "Cannot decode bech32: Invalid checksum!" if (!$vfyChk);
     my @data_ret;
     for ($p = 0; $p < scalar @decoded_hex_data - 6; $p++){
@@ -318,8 +328,23 @@ sub check_bech32_address {
 
 my $i = 0;
 my $stdout;
-foreach (@ARGV) {
-    $stdout = check_bech32_address($_);
-    print "$stdout\n";
-}
+my $checked_results;
+my $bech32_address = $ARGV[0];
+print "\n******************************Starting test for bech32.pl**********************************\n";
+print "Testing check_bech32_address on address: $bech32_address\n";
+$checked_results = check_bech32_address($bech32_address);
+print "checked results:$checked_results\n";
+print "Testing decode and encode:";
+$bech32_address =~ /^(.*)1/;
+my $human_readable_part = $1; #$1 refers to group 1 of the regex above - what's inside the parens
+my ($witness_version, $decoded_hex_data_ref) = decode($human_readable_part, $bech32_address);
+my @decoded_hex_data = @{$decoded_hex_data_ref};
+my $program = join('', @decoded_hex_data);
+print "Decode return:$human_readable_part, $witness_version, @decoded_hex_data\n";
+my $encode_test = encode($human_readable_part, $witness_version, $program);
+print "Encode return:$encode_test\n";
+if ($encode_test eq $bech32_address) { print "Success for encode/decode!\n"; }
+else { print "FAIL\n";}
+
+
 
