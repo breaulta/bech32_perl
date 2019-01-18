@@ -72,6 +72,7 @@ sub verifyChecksum {
     return $checksum_verified;
 }
 
+#
 sub createChecksum {   #Returns decimal Array of 6 values.
     my $hrp_str = $_[0];
     my $data_ref = $_[1];
