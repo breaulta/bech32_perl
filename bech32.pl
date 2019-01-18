@@ -316,93 +316,10 @@ sub check_bech32_address {
     }
 }
 
-
-
 my $i = 0;
 my $stdout;
 foreach (@ARGV) {
-    #eval { check_bech32_address($_) }; warn $@ if $@;
-
-
     $stdout = check_bech32_address($_);
     print "$stdout\n";
 }
-
-    #6 tests
-    #
-
-    # Sub to write when everything is working and it's time to integrate into the schulwitz base58 site.
-    #sub handle_input_from_website {
-#}
-=begin comment
-# Test cases from https://github.com/sipa/bech32/blob/master/ref/c%2B%2B/tests.cpp
-my @testcases = ('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4', 'bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx', 'BC1SW50QA3JX3S', 'bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj', 'bc1qcpwqjl9yzw33puu4hnuhvj5kmv9t5evmkde2rf');
-
-# Other testcases
-my $bech32_encoded_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
-#my $bech32_encoded_address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
-#my $bech32_encoded_address = "A12UEL5L";
-#my $bech32_encoded_address = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
-#my $bech32_encoded_address = "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw";
-#my $bech32_encoded_address = "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j";
-#my $bech32_encoded_address = "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w";
-#my $bech32_encoded_address = "?1ezyfcl";
-print "\nRunning tests for bech32 address $bech32_encoded_address\n";
-my ($hrp_string, $data_ref) = decode_bech32($bech32_encoded_address);
-my @out_data = @{$data_ref};
-print "\nThe bech32 decode output:\nhuman readable part(hrp): $hrp_string\nData in base 32 hex: ";
-foreach (@out_data){ print "$_"; }
-my $data_to_encode = join('', @out_data);
-my $reencoded_bech32 = encode_bech32($hrp_string, $data_to_encode);
-print "\nRe-encoded back to bech32 is: $reencoded_bech32";
-print "\nOriginal bech32 address     : $bech32_encoded_address\n\n";
-
-
-# SegWit tests
-#foreach (@testcases) {
-#    print "\n*****************************************************************************************************";
-#    # Decoder test
-#    my $test_hrp = "tyler";
-#    print "\nRunning test for bitconverter using $_\n";
-#    my ($wit_ver, $program_ref) = decode($test_hrp, $_);
-#    my @program_ = @{$program_ref};
-#    print "\nWitness version: ~$wit_ver~\nProgram: ";
-#    foreach (@program_) { print "$_"; }
-#    print "\n";
-#
-#    # Encoder test
-#    my $program_test_str = join('', @program_);
-#    print "\nRunning Segmented Witness test for encode.";
-#    print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
-#    my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
-#    print "\nEncoded test result should match decode input:$encoded_test\n";
-#
-#}
-my $test_hrp = "bc";
-my $wit_ver = '00';
-my $program_test_str = "751e76e8199196d454941c45d1b3a323f1433bd6";
-print "\n*****************************************************************************************************";
-print "\nRunning Segmented Witness test for encode.";
-print "\nhrp:$test_hrp witver:$wit_ver program:$program_test_str";
-my $encoded_test = encode($test_hrp, $wit_ver, $program_test_str);
-print "\nEncoded test result:$encoded_test Running a decode test on the result...";
-my ($wit_ver, $program_ref) = decode($test_hrp, $encoded_test);
-my @prog = @{$program_ref};
-print "\nWitness version: ~$wit_ver~\nProgram: ";
-foreach (@prog) { print "$_"; }
-print "\n";
-
-
-
-print "\n*****************************************************************************************************";
-print "\n*****************************************************************************************************";
-#my $test_bech32_address_check = "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx"; #invalid length
-#my $test_bech32_address_check = "BC1SW50QA3JX3S";  #invalid, too short
-#my $test_bech32_address_check = "BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4";  #valid p2wpkh
-#my $test_bech32_address_check = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";  #valid P2WSH
-print "\nRunning bech32 address check on address:$test_bech32_address_check";
-print "\nThe bech32 address decodes as:", check_bech32_address($test_bech32_address_check),"\n";
-
-=end comment
-=cut
 
