@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bitcoin Base58 and Bech32/Segwit Encoder, Decoder, and Validator </title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script>
+ function handle_checkbox()
+{
+    if (document.getElementById('bech32chbox').checked){ //The box was just checked
+	//Switch to bech32.
+	document.getElementById('decodetext').innerHTML = "<strong>Bitcoin Address Bech32 Decoder</strong>"; 
+	document.getElementById('encodetext').innerHTML = "<strong>Bitcoin Address Bech32 Encoder</strong>";
+    }else{ //The box was unchecked; switch to base58.
+	document.getElementById('decodetext').innerHTML = "<strong>Bitcoin Address Base58 Decoder</strong>";
+	document.getElementById('encodetext').innerHTML = "<strong>Bitcoin Address Base58 Encoder</strong>";
+    }
+
+}
+ function process_address(action, address)
+{
+    if (action == 'validate'){
+	document.getElementById('daddress').value=address; 
+	document.getElementById('dclick').click()
+	document.getElementById('eaddress').value = document.getElementById('dresult').value; 
+	document.getElementById('eclick').click()
+    }
+    var result = null;
+    var scriptUrl = "/" + "cgi-bin/base58.cgi";
+    $.ajax({
+	url: scriptUrl,
+	type: 'POST',
+	data: {address: address, b58action: action},
+	dataType: 'html',
+	async: false,
+	success: function(data) {
+	    result = data;
+	}, error: function (request,status, error) {
+            console.log(error);
+            alert(status);
+        }
+    });
+    return result;
+}
+</script>
+</head>
+<body>
+<center>
+<h1>Base58 and Bech32/Segwit Encode, Decode, and Validate</h1>
+<form name="validator" action="#" onSubmit="return false;" style="width:550px; border: 1px black solid;">
+<br>
+<div><strong>Bitcoin Address Validator</strong></div>
+<br>
+Input:
+<div><input type="text" name="address" style="width: 500px; border-width: 1px; padding: 5px; font-family: courier" /></div>
+<div><input type="button" value="Check if address is valid." style="width: 200px; border-width: 1px; padding: 5px;" onclick="this.form.result.value = process_address('validate', this.form.address.value);" /></div>
+<div><input type="text" name="result" style="width: 500px; border-width: 1px; padding: 5px; font-family: courier" /></div>
+</br>
+</form>
+<form id="decoder" action="#" onSubmit="return false;" style="width:550px; border: 1px black solid;">
+<br>
+<div id="decodetext"><strong>Bitcoin Address Base58 Decoder</strong></div>
+<br>
+Input:
+<div><input type="text" id="daddress" name="address" style="width: 500px; border-width: 1px; padding: 5px; font-family: courier" /></div>
+<div><input type="button" id="dclick" value="Decode address to hex." style="width: 200px; border-width: 1px; padding: 5px;" onclick="this.form.result.value = process_address('decode', this.form.address.value);" /></div>
+<div><input type="text" id="dresult" name="result" style="width: 500px; border-width: 1px; padding: 5px; font-family: courier" /></div>
+</br>
+</form>
+<form name="encoder" action="#" onSubmit="return false;" style="width:550px; border: 1px black solid;">
+<br>
+<div id="encodetext"><strong>Bitcoin Address Base58 Encoder</strong></div>
+<br>
+Input:
+<div><input type="text" id="eaddress" name="address" style="width: 500px; border-width: 1px; padding: 5px; font-family: courier" /></div>
+<div><input type="button" id="eclick" value="Encode address from hex." style="width: 200px; border-width: 1px; padding: 5px;" onclick="this.form.result.value = process_address('encode', this.form.address.value);" /></div>
+<div><input type="text" name="result" style="width: 500px; border-width: 1px; padding: 5px; font-family: courier" /></div>
+</br>
+</form>
+<br>
+<div>Check for bech32 functionality: <input oninput="handle_checkbox()" type="checkbox" id="bech32chbox"></div>
+<h3 style="text-indent: 50px;">The code for these procedures can be found here: <a href="/b58/base58perl.txt">Base58 Validator/Decoder/Encoder in Perl</a>.</h3>
+</center>
+</body>
+</html>
