@@ -7,7 +7,7 @@ my @CHARSET = ('q','p','z','r','y','9','x','8','g','f','2','t','v','d','w','0','
 # Consult https://github.com/bitcoin/bitcoin/blob/master/src/bech32.cpp for how the polymod function works.
 my @GENERATOR = (0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3);
 sub polymod {
-    my $val_ref = $_[0];
+    my $val_ref = shift;
     my @values = @{$val_ref}; # Convert the array reference $val_ref to a proper array; @values.
     my $chk = 1;
     for (my $p = 0; $p < scalar @values; ++$p) {
@@ -21,13 +21,11 @@ sub polymod {
     }
     return $chk;
 }
-
 # Expand a human readable part for use in checksum computation.
 # There will be N number of h bits representing the higher ord, and N number of l bits representing the lower ord.
 # So hrpExpand will return an array that looks like this: [N number of h chars], 0, [N number of l chars]
 # Reference BIP173 for additional information: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki 
 sub hrpExpand {
-    # 'shift' reads in the first argument passed to the sub.
     my $hrp_str = shift;
     # Convert the human readable part string into an array of chars.
     my @human_readable_part = split(//, $hrp_str, length($hrp_str));
@@ -35,8 +33,7 @@ sub hrpExpand {
     my $i; # i for index.
     # scalar here returns the number of values in the @human_readable_part array.
     for ($i = 0; $i < scalar @human_readable_part; ++$i) { 
-	# Start with the high bits. ord() returns the numeraic value (unicode) of a char.
-	# >> 5 is a right bit shift of 5 places, effectively dividing by 32 (2^5). (I don't know why it isn't *4 except for the previous sentence.)
+	# >> 5 is a right bit shift of 5 places, effectively dividing by 32 (2^5). 
 	# xxxxyyyy => 0000xxxx
 	push @ret, ord($human_readable_part[$i]) >> 5;
     }
@@ -62,11 +59,9 @@ sub verifyChecksum {
     my $hrp_expanded_ref = hrpExpand($hrp_str);
     my @hrp_expanded = @{$hrp_expanded_ref};
     push @hrp_expanded, @hex_data_to_checksum;  # [ hrp_exp values, hex_data values ]
-    # I'm still unsure what exactly polymod does, hence, $poly
-    # Although it is clear that a return of 1 verifies the checksum.
-    my $poly = polymod(\@hrp_expanded); 
+    my $verified = polymod(\@hrp_expanded); 
     # Return 'true': the checksum has been verified.
-    if ( $poly  == 1 ){ $checksum_verified = 1;}
+    if ( $verified  == 1 ){ $checksum_verified = 1;}
     # Return 'false': the checksum failed to verify.
     else{ $checksum_verified = 0;}
     return $checksum_verified;
@@ -84,8 +79,8 @@ sub createChecksum {   #Returns decimal Array of 6 values.
     push @hrp_exp, @data; # Combine the two arrays into @hrp_exp.
     my $mod = polymod(\@hrp_exp) ^ 1; # ^ 1 here means xor with 1.
     my @ret;
-    for (my $p = 0; $p < 6; ++$p) {
-	push @ret, (($mod >> 5 * (5 - $p)) & 31); # bitmagic
+    for (my $i = 0; $i < 6; ++$i) {
+	push @ret, (($mod >> 5 * (5 - $i)) & 31); # bitmagic
     }
     return \@ret;
 }
@@ -205,19 +200,12 @@ sub convertbits {
     my $test;
 
     my @data = @{$data_ref};
-    #print "\nEntering convertbits.\nData in the data array:";
-#    foreach (@data) { print "$_ ";}
     my $acc = 0;
     my $bits = 0;
     my @ret;
     my $maxv = (1 << $tobits) - 1;
     for (my $p = 0; $p < scalar @data; ++$p) {
 	my $value = hex($data[$p]);
-	#print "\nvalue:$value";
-#	if ($value < 0 || ($value >> $frombits) != 0) {
-#	    print "\nFail1\n";
-#	    return; #Fail condition.
-#	}
 	die "Cannot convert bits from negative values!" if ($value < 0);
 	die "Cannot convert bits.  One or more values in the data array are too big!" if (($value >> $frombits) != 0);
 	$acc = ($acc << $frombits) | $value;
@@ -232,9 +220,6 @@ sub convertbits {
 	    push @ret, (($acc << ($tobits - $bits)) & $maxv);
 	}
     } elsif ($bits >= $frombits || (($acc << ($tobits - $bits)) & $maxv)) {
-	#$test = (($acc << ($tobits - $bits)) & $maxv);
-	#print "\ntest:$test";
-	#print "\nbits:$bits frombits:$frombits acc:$acc tobits:$tobits maxv:$maxv\n";
 	#return;  #Fail condition. 
 	die "Cannot convert bits! The bitmagic failed somehow.";
     }
@@ -299,15 +284,13 @@ sub encode {
 sub check_bech32_address {
     my $bech32_address = shift;
     #Match all the characters before the last '1'.
-    $bech32_address =~ /^(.*)1/; # Looks like this properly takes till the last '1'.
+    $bech32_address =~ /^(.*)1/; 
     my $human_readable_part = $1; #$1 refers to group 1 of the regex above - everything until the last '1'.
-    #A successful return from the decode sub guarantees some sort of bech32 address."
+    #A successful return from the decode sub guarantees some sort of bech32 address.
     my ($witness_version, $decoded_hex_data_ref) = decode($human_readable_part, $bech32_address);
     my @decoded_hex_data = @{$decoded_hex_data_ref};
     #Logic block.
     if ($witness_version == 0) {
-	#die "test eval";
-	#print "test eval";
 	#Mainnet bech32 address.
 	if ($bech32_address=~ /^bc1/i){
 	    #Mainnet Pay to Witness Private Key Hash
