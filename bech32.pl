@@ -229,7 +229,7 @@ sub convertbits {
 }
 
 # Segwit address decode.
-sub decode {
+sub decode_segwit_address {
     my $hrp = $_[0];
     my $addr = $_[1];
 
@@ -275,7 +275,7 @@ sub encode {
     my $encoded = encode_bech32($hrp, $ver_and_prog);
 
     #Test if encoded properly. 
-    my ($test_witver, $test_prog_ref) = decode($hrp, $encoded);
+    my ($test_witver, $test_prog_ref) = decode_segwit_address($hrp, $encoded);
     die "Segwit encode failed. This error message should never be reached!" if not defined $test_witver; 
     return $encoded;
 }
@@ -287,7 +287,7 @@ sub check_bech32_address {
     $bech32_address =~ /^(.*)1/; 
     my $human_readable_part = $1; #$1 refers to group 1 of the regex above - everything until the last '1'.
     #A successful return from the decode sub guarantees some sort of bech32 address.
-    my ($witness_version, $decoded_hex_data_ref) = decode($human_readable_part, $bech32_address);
+    my ($witness_version, $decoded_hex_data_ref) = decode_segwit_address($human_readable_part, $bech32_address);
     my @decoded_hex_data = @{$decoded_hex_data_ref};
     #Logic block.
     if ($witness_version == 0) {
@@ -331,7 +331,7 @@ print "checked results:$checked_results\n";
 print "Testing decode and encode:";
 $bech32_address =~ /^(.*)1/;
 my $human_readable_part = $1; #$1 refers to group 1 of the regex above - what's inside the parens
-my ($witness_version, $decoded_hex_data_ref) = decode($human_readable_part, $bech32_address);
+my ($witness_version, $decoded_hex_data_ref) = decode_segwit_address($human_readable_part, $bech32_address);
 my @decoded_hex_data = @{$decoded_hex_data_ref};
 my $program = join('', @decoded_hex_data);
 print "Decode return:$human_readable_part, $witness_version, @decoded_hex_data\n";
